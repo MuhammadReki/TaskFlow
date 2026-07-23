@@ -1,50 +1,304 @@
-# Welcome to your Expo app 👋
+<div align="center">
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
 
-## Get started
 
-1. Install dependencies
+\# 📱 TaskFlow
 
-   ```bash
-   npm install
-   ```
 
-2. Start the app
 
-   ```bash
-   npx expo start
-   ```
+\### Organize Your Tasks. Boost Your Productivity. 🚀
 
-In the output, you'll find options to open the app in a
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+<img src="assets/images/banner.png" width="100%"/>
 
-## Get a fresh project
 
-When you're ready, run:
 
-```bash
-npm run reset-project
+!\[React Native](https://img.shields.io/badge/React%20Native-0.81-blue?logo=react)
+
+!\[Expo](https://img.shields.io/badge/Expo-SDK%2054-black?logo=expo)
+
+!\[TypeScript](https://img.shields.io/badge/TypeScript-3178C6?logo=typescript)
+
+!\[License](https://img.shields.io/badge/License-MIT-green)
+
+
+
+</div>
+
+
+
+\---
+
+
+
+\# 📖 About
+
+
+
+TaskFlow adalah aplikasi To-Do List berbasis \*\*React Native\*\* yang dirancang untuk membantu pengguna mengatur tugas sehari-hari agar lebih produktif.
+
+
+
+Project ini dibuat sebagai media pembelajaran sekaligus portfolio Mobile App Development.
+
+
+
+\---
+
+
+
+\# ✨ Features
+
+
+
+\- ✅ Add Task
+
+\- ✏️ Edit Task
+
+\- 🗑 Delete Task
+
+\- 📊 Statistics
+
+\- 🔔 Reminder Notification
+
+\- 🎨 Clean Modern UI
+
+\- 📱 Responsive Design
+
+
+
+\---
+
+
+
+\# 📸 Screenshots
+
+
+
+<div align="center">
+
+
+
+<img src="assets/images/1.png" width="220"/>
+
+
+
+</div>
+
+
+
+\---
+
+
+
+\# 🛠 Tech Stack
+
+
+
+| Technology | Description |
+
+|------------|-------------|
+
+| React Native | Mobile Framework |
+
+| Expo | Development Platform |
+
+| Expo Router | Navigation |
+
+| TypeScript | Programming Language |
+
+| AsyncStorage | Local Storage |
+
+
+
+\---
+
+
+
+\# 📂 Folder Structure
+
+
+
+```text
+
+TaskFlow
+
+│
+
+├── app
+
+├── assets
+
+│   ├── images
+
+│   ├── icon.png
+
+│   ├── splash.png
+
+│   └── adaptive-icon.png
+
+│
+
+├── components
+
+├── constants
+
+├── hooks
+
+├── package.json
+
+└── README.md
+
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
 
-## Learn more
 
-To learn more about developing your project with Expo, look at the following resources:
+\---
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
 
-## Join the community
 
-Join our community of developers creating universal apps.
+\# 🚀 Installation
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+
+
+Clone repository
+
+
+
+```bash
+
+git clone https://github.com/USERNAME/TaskFlow.git
+
+```
+
+
+
+Masuk ke project
+
+
+
+```bash
+
+cd TaskFlow
+
+```
+
+
+
+Install dependency
+
+
+
+```bash
+
+npm install
+
+```
+
+
+
+Jalankan aplikasi
+
+
+
+```bash
+
+npx expo start
+
+```
+
+
+
+\---
+
+
+
+\# 📦 Build APK
+
+
+
+```bash
+
+npx expo run:android
+
+```
+
+
+
+atau
+
+
+
+```bash
+
+eas build -p android
+
+```
+
+
+
+\---
+
+
+
+\# 👨‍💻 Developer
+
+
+
+\*\*Muhammad Reki\*\*
+
+
+
+🎓 D4 Teknologi Rekayasa Komputer
+
+
+
+🏫 Politeknik Pertanian Negeri Payakumbuh
+
+
+
+\*\*GitHub\*\*  
+
+https://github.com/MuhammadReki
+
+
+
+\*\*Instagram\*\*  
+
+https://instagram.com/muhammad.reki\_
+
+
+
+\*\*LinkedIn\*\*  
+
+https://linkedin.com/in/muhammadreki
+
+
+
+\---
+
+
+
+\# ⭐ Support
+
+
+
+Kalau project ini bermanfaat, jangan lupa kasih ⭐ di repository ini.
+
+
+
+Terima kasih 🙏
+
+
+
+\---
+
+
+
+\## 📜 License
+
+
+
+MIT License
+
