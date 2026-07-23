@@ -4,6 +4,7 @@
 
 ### Organize Your Tasks. Boost Your Productivity. 🚀
 
+<<<<<<< HEAD
 ![React Native](https://img.shields.io/badge/React%20Native-0.81-blue?logo=react)
 ![Expo](https://img.shields.io/badge/Expo-SDK%2054-black?logo=expo)
 ![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?logo=typescript)
@@ -31,6 +32,37 @@ Project ini dibuat sebagai media pembelajaran sekaligus portfolio Mobile App Dev
 - 🎨 Clean Modern UI
 - 📱 Responsive Design
 
+=======
+<img src="assets/images/banner.png" width="100%"/>
+
+![React Native](https://img.shields.io/badge/React%20Native-0.81-blue?logo=react)
+![Expo](https://img.shields.io/badge/Expo-SDK%2054-black?logo=expo)
+![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?logo=typescript)
+![License](https://img.shields.io/badge/License-MIT-green)
+
+</div>
+
+---
+
+# 📖 About
+
+TaskFlow adalah aplikasi To-Do List berbasis **React Native** yang dirancang untuk membantu pengguna mengatur tugas sehari-hari agar lebih produktif.
+
+Project ini dibuat sebagai media pembelajaran sekaligus portfolio Mobile App Development.
+
+---
+
+# ✨ Features
+
+- ✅ Add Task
+- ✏️ Edit Task
+- 🗑 Delete Task
+- 📊 Statistics
+- 🔔 Reminder Notification
+- 🎨 Clean Modern UI
+- 📱 Responsive Design
+
+>>>>>>> 91a985aa5866b40a941c44e91e09578f0eb61a2b
 ---
 
 # 📸 Screenshots
@@ -45,6 +77,7 @@ Project ini dibuat sebagai media pembelajaran sekaligus portfolio Mobile App Dev
 
 # 🛠 Tech Stack
 
+<<<<<<< HEAD
 | Technology   | Description          |
 | ------------ | -------------------- |
 | React Native | Mobile Framework     |
@@ -52,6 +85,15 @@ Project ini dibuat sebagai media pembelajaran sekaligus portfolio Mobile App Dev
 | Expo Router  | Navigation           |
 | TypeScript   | Programming Language |
 | AsyncStorage | Local Storage        |
+=======
+| Technology | Description |
+|------------|-------------|
+| React Native | Mobile Framework |
+| Expo | Development Platform |
+| Expo Router | Navigation |
+| TypeScript | Programming Language |
+| AsyncStorage | Local Storage |
+>>>>>>> 91a985aa5866b40a941c44e91e09578f0eb61a2b
 
 ---
 
@@ -82,4 +124,7 @@ ToDoList/
 ├── app.json
 ├── package.json
 └── README.md
+<<<<<<< HEAD
 ```
+=======
+>>>>>>> 91a985aa5866b40a941c44e91e09578f0eb61a2b

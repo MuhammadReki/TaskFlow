@@ -1,12 +1,5 @@
-import {
-  cancelTaskNotification,
-  rescheduleAllTasks,
-  scheduleTaskNotification,
-} from "@/utils/notifications";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { createContext, useEffect, useState } from "react";
-
-// ... (kode yang sudah ada)
+import { createContext, useContext, useEffect, useState } from "react";
 
 const TasksContext = createContext();
 
@@ -18,13 +11,6 @@ export function TasksProvider({ children }) {
     loadTasks();
   }, []);
 
-  // ========== JADWALKAN ULANG NOTIFIKASI SAAT TASKS BERUBAH ==========
-  useEffect(() => {
-    if (tasks.length > 0) {
-      rescheduleAllTasks(tasks);
-    }
-  }, [tasks]);
-
   // ========== FUNGSI LOAD TASKS ==========
   const loadTasks = async () => {
     try {
@@ -32,10 +18,6 @@ export function TasksProvider({ children }) {
       if (stored) {
         const parsed = JSON.parse(stored);
         setTasks(parsed);
-        // Jadwalkan ulang notifikasi setelah load data
-        if (parsed.length > 0) {
-          await rescheduleAllTasks(parsed);
-        }
       }
     } catch (error) {
       console.log("Gagal load tasks:", error);
@@ -58,12 +40,10 @@ export function TasksProvider({ children }) {
       ...newTask,
       id: Date.now().toString(),
       completed: false,
+      createdAt: new Date().toISOString(),
     };
     const updatedTasks = [...tasks, taskWithId];
     await saveTasks(updatedTasks);
-
-    // Jadwalkan notifikasi untuk task baru
-    await scheduleTaskNotification(taskWithId);
   };
 
   // ========== UPDATE TASK ==========
@@ -72,19 +52,10 @@ export function TasksProvider({ children }) {
       task.id === id ? { ...task, ...updatedData } : task,
     );
     await saveTasks(updatedTasks);
-
-    // Update notifikasi
-    const task = updatedTasks.find((t) => t.id === id);
-    if (task) {
-      await scheduleTaskNotification(task);
-    }
   };
 
   // ========== DELETE TASK ==========
   const deleteTask = async (id) => {
-    // Hapus notifikasi task
-    await cancelTaskNotification(id);
-
     const updatedTasks = tasks.filter((task) => task.id !== id);
     await saveTasks(updatedTasks);
   };
@@ -95,26 +66,16 @@ export function TasksProvider({ children }) {
       task.id === id ? { ...task, completed: !task.completed } : task,
     );
     await saveTasks(updatedTasks);
-
-    // Jika task selesai, hapus notifikasi
-    const task = updatedTasks.find((t) => t.id === id);
-    if (task?.completed) {
-      await cancelTaskNotification(id);
-    }
   };
 
   // ========== RESET ALL TASKS ==========
   const resetAllTasks = async () => {
-    await cancelAllNotifications();
     await saveTasks([]);
   };
 
   // ========== REPLACE ALL TASKS (untuk restore backup) ==========
   const replaceAllTasks = async (newTasks) => {
     await saveTasks(newTasks);
-    if (newTasks.length > 0) {
-      await rescheduleAllTasks(newTasks);
-    }
   };
 
   // ========== GET TASK BY ID ==========
@@ -122,7 +83,27 @@ export function TasksProvider({ children }) {
     return tasks.find((task) => task.id === id);
   };
 
-  // ... (return context value)
+  const value = {
+    tasks,
+    addTask,
+    updateTask,
+    deleteTask,
+    toggleTask,
+    resetAllTasks,
+    replaceAllTasks,
+    getTaskById,
+    loadTasks,
+  };
+
+  return (
+    <TasksContext.Provider value={value}>{children}</TasksContext.Provider>
+  );
 }
 
-// ... (export useTasks)
+export function useTasks() {
+  const context = useContext(TasksContext);
+  if (!context) {
+    throw new Error("useTasks must be used within a TasksProvider");
+  }
+  return context;
+}
