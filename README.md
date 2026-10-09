@@ -11,10 +11,13 @@
 [![Supabase](https://img.shields.io/badge/Supabase-PostgreSQL-3ECF8E?logo=supabase)](https://supabase.com)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.9-3178C6?logo=typescript)](https://typescriptlang.org)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Release](https://img.shields.io/github/v/release/MuhammadReki/TaskFlow?color=green&label=release)](https://github.com/MuhammadReki/TaskFlow/releases/latest)
 
 **Kelola tugasmu, tingkatkan produktivitasmu.**
 
-[Fitur](#-fitur) • [Screenshot](#-screenshot) • [Tech Stack](#️-tech-stack) • [Install](#-cara-install) • [Demo](#-demo)
+### ⬇️ [**Download APK v1.0.0 (34 MB)**](https://github.com/MuhammadReki/TaskFlow/releases/latest/download/app-release.apk)
+
+[Fitur](#-fitur) • [Screenshot](#-screenshot) • [Download](#-download-aplikasi) • [Tech Stack](#️-tech-stack) • [Install](#-cara-install)
 
 </div>
 
@@ -95,6 +98,34 @@
 
 ---
 
+## 📱 Download Aplikasi
+
+<div align="center">
+
+### Scan QR Code untuk download APK
+
+<img src="docs/qr-code.png" width="200" alt="QR Code Download"/>
+
+### ⬇️ [**Download TaskFlow v1.0.0 (34 MB)**](https://github.com/MuhammadReki/TaskFlow/releases/latest/download/app-release.apk) ⬇️
+
+**Requirements:**
+
+- ✅ Android 7.0 (Nougat) atau lebih baru
+- ✅ ARM64 device (HP modern)
+- ✅ ~50 MB free space
+- ✅ Internet (untuk cloud sync)
+
+**Cara Install:**
+
+1. Download file `app-release.apk`
+2. Buka file → tap **"Install"**
+3. Kalo muncul warning, aktifkan **"Install from unknown sources"**
+4. Buka app **TaskFlow** 🎉
+
+</div>
+
+---
+
 ## 🛠️ Tech Stack
 
 | Komponen       | Tech                                 |
@@ -127,5 +158,5 @@
 
 ```bash
 git clone https://github.com/MuhammadReki/TaskFlow.git
-cd TaskFlow
+cd TaskFlownpm install
 ```
