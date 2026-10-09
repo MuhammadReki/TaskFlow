@@ -1,4 +1,5 @@
 import { useTheme } from "@/context/ThemeContext";
+import { hapticSelection } from "@/lib/haptics";
 import { Ionicons } from "@expo/vector-icons";
 import { Tabs } from "expo-router";
 
@@ -24,6 +25,11 @@ export default function TabsLayout() {
           fontWeight: "600",
         },
       }}
+      screenListeners={{
+        tabPress: () => {
+          hapticSelection();
+        },
+      }}
     >
       <Tabs.Screen
         name="index"
@@ -34,7 +40,6 @@ export default function TabsLayout() {
           ),
         }}
       />
-
       <Tabs.Screen
         name="statistik"
         options={{
@@ -44,7 +49,6 @@ export default function TabsLayout() {
           ),
         }}
       />
-
       <Tabs.Screen
         name="pengaturan"
         options={{

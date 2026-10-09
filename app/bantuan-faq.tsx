@@ -1,3 +1,4 @@
+import { useLanguage } from "@/context/LanguageContext";
 import { useTheme } from "@/context/ThemeContext";
 import { hapticLight } from "@/lib/haptics";
 import { Ionicons } from "@expo/vector-icons";
@@ -12,43 +13,73 @@ import {
   View,
 } from "react-native";
 
-// Isi FAQ
-const FAQ_ITEMS = [
-  {
-    question: "Apakah data saya aman kalau HP hilang?",
-    answer:
-      "Aman! Data TaskFlow tersimpan di cloud (Supabase). Tinggal login dari HP baru, semua tugas langsung muncul lagi.",
-  },
-  {
-    question: "Bagaimana cara backup data tugas saya?",
-    answer:
-      "Buka Pengaturan → Data & Backup → Backup Data (JSON). File JSON berisi semua tugas kamu akan dibuat dan bisa langsung disimpan ke Google Drive, email, atau penyimpanan lain.",
-  },
-  {
-    question: "Bagaimana cara memulihkan data dari backup?",
-    answer:
-      "Buka Pengaturan → Data & Backup → Restore Data (JSON), lalu pilih file backup JSON yang sebelumnya kamu simpan. Data yang ada sekarang akan diganti dengan isi file backup.",
-  },
-  {
-    question: "Apakah TaskFlow butuh koneksi internet?",
-    answer:
-      "Ya, TaskFlow butuh internet karena data disimpan di cloud (Supabase). Tapi kamu bisa akses dari device manapun setelah login.",
-  },
-  {
-    question: "Bagaimana cara menghapus semua data sekaligus?",
-    answer:
-      "Buka Pengaturan → Reset Semua Data. Perlu diingat, tindakan ini akan menghapus seluruh tugas secara permanen dan tidak bisa dibatalkan, jadi pastikan kamu sudah backup dulu kalau perlu.",
-  },
-  {
-    question: "Kenapa notifikasi pengingat tidak muncul?",
-    answer:
-      'Pastikan toggle "Pengingat Tugas" di Pengaturan → Notifikasi sudah aktif, dan izin notifikasi untuk TaskFlow sudah diaktifkan di pengaturan sistem HP kamu.',
-  },
-];
-
 export default function BantuanFaqScreen() {
   const { colors } = useTheme();
+  const { t, language } = useLanguage();
   const [openIndex, setOpenIndex] = useState<number | null>(null);
+
+  const FAQ_ITEMS = [
+    {
+      question:
+        language === "id"
+          ? "Apakah data saya aman kalau HP hilang?"
+          : "Is my data safe if I lose my phone?",
+      answer:
+        language === "id"
+          ? "Aman! Data TaskFlow tersimpan di cloud (Supabase). Tinggal login dari HP baru, semua tugas langsung muncul lagi."
+          : "Safe! TaskFlow data is stored in the cloud (Supabase). Just log in from a new phone, and all tasks will appear.",
+    },
+    {
+      question:
+        language === "id"
+          ? "Bagaimana cara backup data tugas saya?"
+          : "How do I backup my task data?",
+      answer:
+        language === "id"
+          ? "Buka Pengaturan → Data & Backup → Backup Data (JSON). File JSON berisi semua tugas kamu akan dibuat dan bisa langsung disimpan."
+          : "Go to Settings → Data & Backup → Backup Data (JSON). A JSON file containing all your tasks will be created and can be saved immediately.",
+    },
+    {
+      question:
+        language === "id"
+          ? "Bagaimana cara memulihkan data dari backup?"
+          : "How do I restore data from backup?",
+      answer:
+        language === "id"
+          ? "Buka Pengaturan → Data & Backup → Restore Data (JSON), lalu pilih file backup JSON yang sebelumnya kamu simpan."
+          : "Go to Settings → Data & Backup → Restore Data (JSON), then select the JSON backup file you saved earlier.",
+    },
+    {
+      question:
+        language === "id"
+          ? "Apakah TaskFlow butuh koneksi internet?"
+          : "Does TaskFlow need an internet connection?",
+      answer:
+        language === "id"
+          ? "Ya, TaskFlow butuh internet karena data disimpan di cloud (Supabase). Tapi kamu bisa akses dari device manapun setelah login."
+          : "Yes, TaskFlow needs internet because data is stored in the cloud (Supabase). But you can access it from any device after logging in.",
+    },
+    {
+      question:
+        language === "id"
+          ? "Bagaimana cara menghapus semua data sekaligus?"
+          : "How do I delete all data at once?",
+      answer:
+        language === "id"
+          ? "Buka Pengaturan → Reset Semua Data. Tindakan ini akan menghapus seluruh tugas secara permanen."
+          : "Go to Settings → Reset All Data. This action will permanently delete all tasks.",
+    },
+    {
+      question:
+        language === "id"
+          ? "Kenapa notifikasi pengingat tidak muncul?"
+          : "Why aren't reminder notifications showing up?",
+      answer:
+        language === "id"
+          ? 'Pastikan toggle "Pengingat Tugas" di Pengaturan → Notifikasi sudah aktif, dan izin notifikasi untuk TaskFlow sudah diaktifkan.'
+          : 'Make sure the "Task Reminder" toggle in Settings → Notifications is active, and notification permission for TaskFlow is enabled.',
+    },
+  ];
 
   const toggleItem = (index: number) => {
     setOpenIndex(openIndex === index ? null : index);
@@ -56,7 +87,6 @@ export default function BantuanFaqScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.card }]}>
-      {/* ================= HEADER ================= */}
       <View style={[styles.header, { borderBottomColor: colors.border }]}>
         <TouchableOpacity
           onPress={() => {
@@ -67,7 +97,7 @@ export default function BantuanFaqScreen() {
           <Ionicons name="chevron-back" size={24} color={colors.text} />
         </TouchableOpacity>
         <Text style={[styles.headerTitle, { color: colors.text }]}>
-          Bantuan & FAQ
+          {t("bantuanFaqTitle")}
         </Text>
         <View style={{ width: 24 }} />
       </View>
@@ -77,7 +107,7 @@ export default function BantuanFaqScreen() {
         showsVerticalScrollIndicator={false}
       >
         <Text style={[styles.description, { color: colors.textSecondary }]}>
-          Pertanyaan yang sering ditanyakan seputar TaskFlow.
+          {t("pertanyaanSering")}
         </Text>
 
         <View
@@ -135,9 +165,8 @@ export default function BantuanFaqScreen() {
           })}
         </View>
 
-        {/* ================= KONTAK ================= */}
         <Text style={[styles.sectionLabel, { color: colors.textMuted }]}>
-          MASIH BUTUH BANTUAN?
+          {t("masihButuhBantuan")}
         </Text>
         <View
           style={[
@@ -165,7 +194,7 @@ export default function BantuanFaqScreen() {
             </View>
             <View style={{ flex: 1 }}>
               <Text style={[styles.rowTitle, { color: colors.text }]}>
-                Hubungi Support
+                {t("hubungiSupport")}
               </Text>
               <Text style={[styles.rowSubtitle, { color: colors.textMuted }]}>
                 mreki2023@gmail.com

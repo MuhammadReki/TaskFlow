@@ -1,3 +1,4 @@
+import { useLanguage } from "@/context/LanguageContext";
 import { useTasks } from "@/context/TasksContext";
 import { useTheme } from "@/context/ThemeContext";
 import { hapticSelection } from "@/lib/haptics";
@@ -12,22 +13,40 @@ import {
 } from "react-native";
 import Svg, { Circle, G, Rect } from "react-native-svg";
 
-const PERIODS = ["7 Hari Terakhir", "30 Hari Terakhir", "Semua Waktu"];
+// ================== TYPE ==================
+type Task = {
+  id: string;
+  title: string;
+  description?: string;
+  date?: string;
+  dateLabel?: string;
+  priority?: string;
+  category?: string;
+  icon?: string;
+  completed: boolean;
+  deadlineDate?: string;
+};
 
 export default function StatistikScreen() {
   const { tasks } = useTasks();
   const { colors } = useTheme();
-  const [activePeriod, setActivePeriod] = useState(PERIODS[0]);
+  const { t } = useLanguage();
+  const [activePeriod, setActivePeriod] = useState("7");
 
-  // ================== HITUNG DATA DARI TASKS ==================
+  const PERIODS = [
+    { key: "7", label: t("tujuhHari") },
+    { key: "30", label: t("tigaPuluhHari") },
+    { key: "all", label: t("semuaWaktu") },
+  ];
+
   const stats = useMemo(() => {
     const total = tasks.length;
-    const selesai = tasks.filter((t) => t.completed).length;
+    const selesai = tasks.filter((t: Task) => t.completed).length;
     const belumSelesai = total - selesai;
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    const tugasHariIni = tasks.filter((t) => {
+    const tugasHariIni = tasks.filter((t: Task) => {
       if (!t.deadlineDate || t.completed) return false;
       const d = new Date(t.deadlineDate);
       d.setHours(0, 0, 0, 0);
@@ -45,32 +64,32 @@ export default function StatistikScreen() {
       d.setHours(0, 0, 0, 0);
       const label = `${d.getDate()}/${d.getMonth() + 1}`;
 
-      const taskHariItu = tasks.filter((t) => {
+      const taskHariItu = tasks.filter((t: Task) => {
         if (!t.date) return false;
         return t.date === label;
       });
 
       chartData.push({
         label,
-        selesai: taskHariItu.filter((t) => t.completed).length,
-        belumSelesai: taskHariItu.filter((t) => !t.completed).length,
+        selesai: taskHariItu.filter((t: Task) => t.completed).length,
+        belumSelesai: taskHariItu.filter((t: Task) => !t.completed).length,
       });
     }
 
     const priorityData = [
       {
-        label: "Tinggi",
-        count: tasks.filter((t) => t.priority === "Tinggi").length,
+        label: t("tinggi"),
+        count: tasks.filter((t: Task) => t.priority === "Tinggi").length,
         color: colors.danger,
       },
       {
-        label: "Sedang",
-        count: tasks.filter((t) => t.priority === "Sedang").length,
+        label: t("sedang"),
+        count: tasks.filter((t: Task) => t.priority === "Sedang").length,
         color: colors.warning,
       },
       {
-        label: "Rendah",
-        count: tasks.filter((t) => t.priority === "Rendah").length,
+        label: t("rendah"),
+        count: tasks.filter((t: Task) => t.priority === "Rendah").length,
         color: colors.primary,
       },
     ];
@@ -90,7 +109,7 @@ export default function StatistikScreen() {
       priorityData: priorityWithPercent,
       productivityPercent,
     };
-  }, [tasks, colors]);
+  }, [tasks, colors, t]);
 
   const maxBarValue = useMemo(() => {
     const max = Math.max(
@@ -112,7 +131,7 @@ export default function StatistikScreen() {
     >
       <View style={styles.header}>
         <Text style={[styles.headerTitle, { color: colors.text }]}>
-          Statistik
+          {t("statistik")}
         </Text>
         <View
           style={[
@@ -137,17 +156,17 @@ export default function StatistikScreen() {
         ]}
       >
         {PERIODS.map((period) => {
-          const active = period === activePeriod;
+          const active = period.key === activePeriod;
           return (
             <TouchableOpacity
-              key={period}
+              key={period.key}
               style={[
                 styles.periodChip,
                 active && { backgroundColor: colors.primary },
               ]}
               onPress={() => {
                 hapticSelection();
-                setActivePeriod(period);
+                setActivePeriod(period.key);
               }}
             >
               <Text
@@ -157,7 +176,7 @@ export default function StatistikScreen() {
                 ]}
                 numberOfLines={1}
               >
-                {period}
+                {period.label}
               </Text>
             </TouchableOpacity>
           );
@@ -165,7 +184,7 @@ export default function StatistikScreen() {
       </ScrollView>
 
       <Text style={[styles.sectionTitle, { color: colors.text }]}>
-        Ringkasan
+        {t("ringkasan")}
       </Text>
       <View style={styles.summaryGrid}>
         <SummaryCard
@@ -173,7 +192,7 @@ export default function StatistikScreen() {
           iconBg={colors.primaryBg}
           iconColor={colors.primary}
           value={stats.summary.totalTugas}
-          label="Total Tugas"
+          label={t("totalTugas")}
           colors={colors}
         />
         <SummaryCard
@@ -181,7 +200,7 @@ export default function StatistikScreen() {
           iconBg={colors.primaryBg}
           iconColor={colors.primary}
           value={stats.summary.selesai}
-          label="Selesai"
+          label={t("selesai")}
           colors={colors}
         />
         <SummaryCard
@@ -189,7 +208,7 @@ export default function StatistikScreen() {
           iconBg={colors.warningBg}
           iconColor={colors.warning}
           value={stats.summary.belumSelesai}
-          label="Belum Selesai"
+          label={t("belumSelesai")}
           colors={colors}
         />
         <SummaryCard
@@ -197,7 +216,7 @@ export default function StatistikScreen() {
           iconBg={colors.infoBg}
           iconColor={colors.info}
           value={stats.summary.tugasHariIni}
-          label="Tugas Hari Ini"
+          label={t("tugasHariIni")}
           colors={colors}
         />
       </View>
@@ -211,10 +230,10 @@ export default function StatistikScreen() {
         <View style={styles.chartHeaderRow}>
           <View>
             <Text style={[styles.cardTitle, { color: colors.text }]}>
-              Tugas Selesai vs Belum Selesai
+              {t("tugasSelesaiVs")}
             </Text>
             <Text style={[styles.cardSubtitle, { color: colors.textMuted }]}>
-              ({activePeriod})
+              ({PERIODS.find((p) => p.key === activePeriod)?.label})
             </Text>
           </View>
         </View>
@@ -225,7 +244,7 @@ export default function StatistikScreen() {
               style={[styles.legendDot, { backgroundColor: colors.primary }]}
             />
             <Text style={[styles.legendText, { color: colors.textSecondary }]}>
-              Selesai
+              {t("selesai")}
             </Text>
           </View>
           <View style={styles.legendItem}>
@@ -233,13 +252,13 @@ export default function StatistikScreen() {
               style={[styles.legendDot, { backgroundColor: colors.border }]}
             />
             <Text style={[styles.legendText, { color: colors.textSecondary }]}>
-              Belum Selesai
+              {t("belumSelesai")}
             </Text>
           </View>
         </View>
 
         {stats.chartData.length === 0 ? (
-          <EmptyChart text="Belum ada data untuk ditampilkan" colors={colors} />
+          <EmptyChart text={t("belumAdaData")} colors={colors} />
         ) : (
           <BarChart
             data={stats.chartData}
@@ -256,11 +275,11 @@ export default function StatistikScreen() {
         ]}
       >
         <Text style={[styles.cardTitle, { color: colors.text }]}>
-          Distribusi Prioritas
+          {t("distribusiPrioritas")}
         </Text>
 
         {stats.priorityData.length === 0 || totalPriority === 0 ? (
-          <EmptyChart text="Belum ada data prioritas" colors={colors} />
+          <EmptyChart text={t("belumAdaPrioritas")} colors={colors} />
         ) : (
           <View style={styles.donutRow}>
             <DonutChart
@@ -286,7 +305,7 @@ export default function StatistikScreen() {
                         { color: colors.textMuted },
                       ]}
                     >
-                      {p.count} tugas
+                      {p.count} {t("tugas")}
                     </Text>
                   </View>
                   <Text
@@ -308,10 +327,10 @@ export default function StatistikScreen() {
         <View style={{ flex: 1, marginLeft: 12 }}>
           <Text style={[styles.productivityText, { color: colors.text }]}>
             {stats.productivityPercent === null ? (
-              "Selesaikan tugas biar keliatan performamu di sini"
+              t("selesaikanTugas")
             ) : (
               <>
-                Kamu udah selesaiin{" "}
+                {t("kamuUdahSelesaiin")}{" "}
                 <Text
                   style={[
                     styles.productivityPercent,
@@ -320,7 +339,7 @@ export default function StatistikScreen() {
                 >
                   {stats.productivityPercent}%
                 </Text>{" "}
-                tugas kamu!
+                {t("tugasKamu")}
               </>
             )}
           </Text>
@@ -331,8 +350,6 @@ export default function StatistikScreen() {
     </ScrollView>
   );
 }
-
-// ================== KOMPONEN KECIL ==================
 
 function SummaryCard({
   icon,
@@ -497,7 +514,6 @@ function DonutChart({
 
 const styles = StyleSheet.create({
   container: { flex: 1, paddingHorizontal: 20 },
-
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -517,7 +533,6 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 2,
   },
-
   periodRow: { marginTop: 12, flexGrow: 0 },
   periodRowContent: { borderRadius: 14, padding: 4, gap: 6 },
   periodChip: {
@@ -528,14 +543,12 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   periodChipText: { fontSize: 12, fontWeight: "600" },
-
   sectionTitle: {
     fontSize: 16,
     fontWeight: "800",
     marginTop: 22,
     marginBottom: 12,
   },
-
   summaryGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
@@ -561,7 +574,6 @@ const styles = StyleSheet.create({
   },
   summaryValue: { fontSize: 24, fontWeight: "800" },
   summaryLabel: { fontSize: 12, marginTop: 2 },
-
   card: {
     borderRadius: 18,
     padding: 18,
@@ -579,15 +591,12 @@ const styles = StyleSheet.create({
   },
   cardTitle: { fontSize: 15, fontWeight: "800" },
   cardSubtitle: { fontSize: 12, marginTop: 2 },
-
   legendRow: { flexDirection: "row", gap: 16, marginTop: 14, marginBottom: 6 },
   legendItem: { flexDirection: "row", alignItems: "center" },
   legendDot: { width: 10, height: 10, borderRadius: 5, marginRight: 6 },
   legendText: { fontSize: 12 },
-
   barLabelsRow: { flexDirection: "row", marginTop: 4 },
   barLabel: { fontSize: 10, textAlign: "center" },
-
   donutRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -603,14 +612,12 @@ const styles = StyleSheet.create({
   donutLegendLabel: { fontSize: 13, fontWeight: "700" },
   donutLegendCount: { fontSize: 11, marginTop: 1 },
   donutLegendPercent: { marginLeft: "auto", fontSize: 14, fontWeight: "800" },
-
   emptyChart: {
     alignItems: "center",
     justifyContent: "center",
     paddingVertical: 40,
   },
   emptyChartText: { fontSize: 12, marginTop: 8 },
-
   productivityCard: {
     flexDirection: "row",
     alignItems: "center",

@@ -1,3 +1,4 @@
+import { useLanguage } from "@/context/LanguageContext";
 import { useTheme } from "@/context/ThemeContext";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
@@ -16,6 +17,7 @@ const { width } = Dimensions.get("window");
 
 export default function WelcomeScreen() {
   const { colors } = useTheme();
+  const { t, language } = useLanguage();
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(20)).current;
 
@@ -84,7 +86,9 @@ export default function WelcomeScreen() {
         </Text>
 
         <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-          Kelola tugasmu, tingkatkan produktivitasmu.
+          {language === "id"
+            ? "Kelola tugasmu, tingkatkan produktivitasmu."
+            : "Manage your tasks, boost your productivity."}
         </Text>
 
         {/* Ilustrasi */}
@@ -199,7 +203,7 @@ export default function WelcomeScreen() {
           <Ionicons name="arrow-forward" size={26} color="#fff" />
         </TouchableOpacity>
         <Text style={[styles.hintText, { color: colors.textMuted }]}>
-          Get Started
+          {language === "id" ? "Mulai" : "Get Started"}
         </Text>
       </View>
     </TouchableOpacity>

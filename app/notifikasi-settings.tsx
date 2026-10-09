@@ -1,3 +1,4 @@
+import { useLanguage } from "@/context/LanguageContext";
 import { useTheme } from "@/context/ThemeContext";
 import { hapticLight, hapticSelection } from "@/lib/haptics";
 import { Ionicons } from "@expo/vector-icons";
@@ -14,15 +15,17 @@ import {
 
 export default function NotifikasiSettingsScreen() {
   const { colors } = useTheme();
+  const { t, language } = useLanguage();
   const [remindersEnabled, setRemindersEnabled] = useState(true);
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [vibrationEnabled, setVibrationEnabled] = useState(true);
   const [dailySummary, setDailySummary] = useState(false);
   const [overdueAlert, setOverdueAlert] = useState(true);
 
+  const isID = language === "id";
+
   return (
     <View style={[styles.container, { backgroundColor: colors.card }]}>
-      {/* ================= HEADER ================= */}
       <View style={[styles.header, { borderBottomColor: colors.border }]}>
         <TouchableOpacity
           onPress={() => {
@@ -33,7 +36,7 @@ export default function NotifikasiSettingsScreen() {
           <Ionicons name="chevron-back" size={24} color={colors.text} />
         </TouchableOpacity>
         <Text style={[styles.headerTitle, { color: colors.text }]}>
-          Notifikasi
+          {t("notifikasi")}
         </Text>
         <View style={{ width: 24 }} />
       </View>
@@ -43,10 +46,11 @@ export default function NotifikasiSettingsScreen() {
         showsVerticalScrollIndicator={false}
       >
         <Text style={[styles.description, { color: colors.textSecondary }]}>
-          Atur bagaimana dan kapan TaskFlow mengingatkan kamu tentang tugas.
+          {isID
+            ? "Atur bagaimana dan kapan TaskFlow mengingatkan kamu tentang tugas."
+            : "Set how and when TaskFlow reminds you about tasks."}
         </Text>
 
-        {/* ================= PENGINGAT UTAMA ================= */}
         <View
           style={[
             styles.card,
@@ -60,8 +64,12 @@ export default function NotifikasiSettingsScreen() {
             icon="notifications-outline"
             iconBg={colors.primaryBg}
             iconColor={colors.primary}
-            title="Pengingat Tugas"
-            subtitle="Aktifkan notifikasi pengingat deadline"
+            title={isID ? "Pengingat Tugas" : "Task Reminder"}
+            subtitle={
+              isID
+                ? "Aktifkan notifikasi pengingat deadline"
+                : "Enable deadline reminder notifications"
+            }
             colors={colors}
             right={
               <Switch
@@ -77,9 +85,8 @@ export default function NotifikasiSettingsScreen() {
           />
         </View>
 
-        {/* ================= DETAIL ================= */}
         <Text style={[styles.sectionLabel, { color: colors.textMuted }]}>
-          DETAIL NOTIFIKASI
+          {isID ? "DETAIL NOTIFIKASI" : "NOTIFICATION DETAILS"}
         </Text>
         <View
           style={[
@@ -95,8 +102,12 @@ export default function NotifikasiSettingsScreen() {
             icon="volume-high-outline"
             iconBg={colors.warningBg}
             iconColor={colors.warning}
-            title="Suara"
-            subtitle="Mainkan suara saat notifikasi muncul"
+            title={isID ? "Suara" : "Sound"}
+            subtitle={
+              isID
+                ? "Mainkan suara saat notifikasi muncul"
+                : "Play sound when notification appears"
+            }
             colors={colors}
             right={
               <Switch
@@ -116,8 +127,12 @@ export default function NotifikasiSettingsScreen() {
             icon="phone-portrait-outline"
             iconBg={colors.infoBg}
             iconColor={colors.info}
-            title="Getar"
-            subtitle="Getarkan perangkat saat notifikasi muncul"
+            title={isID ? "Getar" : "Vibration"}
+            subtitle={
+              isID
+                ? "Getarkan perangkat saat notifikasi muncul"
+                : "Vibrate device when notification appears"
+            }
             colors={colors}
             right={
               <Switch
@@ -134,9 +149,8 @@ export default function NotifikasiSettingsScreen() {
           />
         </View>
 
-        {/* ================= JENIS NOTIFIKASI ================= */}
         <Text style={[styles.sectionLabel, { color: colors.textMuted }]}>
-          JENIS NOTIFIKASI
+          {isID ? "JENIS NOTIFIKASI" : "NOTIFICATION TYPES"}
         </Text>
         <View
           style={[
@@ -152,8 +166,12 @@ export default function NotifikasiSettingsScreen() {
             icon="alert-circle-outline"
             iconBg={colors.warningBg}
             iconColor={colors.warning}
-            title="Tugas Terlambat"
-            subtitle="Beri tahu saat tugas melewati deadline"
+            title={isID ? "Tugas Terlambat" : "Overdue Tasks"}
+            subtitle={
+              isID
+                ? "Beri tahu saat tugas melewati deadline"
+                : "Notify when task passes deadline"
+            }
             colors={colors}
             right={
               <Switch
@@ -173,8 +191,12 @@ export default function NotifikasiSettingsScreen() {
             icon="today-outline"
             iconBg={colors.primaryBg}
             iconColor={colors.primary}
-            title="Ringkasan Harian"
-            subtitle="Kirim ringkasan tugas hari ini setiap pagi"
+            title={isID ? "Ringkasan Harian" : "Daily Summary"}
+            subtitle={
+              isID
+                ? "Kirim ringkasan tugas hari ini setiap pagi"
+                : "Send today's task summary every morning"
+            }
             colors={colors}
             right={
               <Switch
@@ -198,8 +220,9 @@ export default function NotifikasiSettingsScreen() {
             color={colors.textMuted}
           />
           <Text style={[styles.noteText, { color: colors.textMuted }]}>
-            Notifikasi diproses langsung di perangkat kamu (notifikasi lokal),
-            jadi tetap jalan meski tidak ada koneksi internet.
+            {isID
+              ? "Notifikasi diproses langsung di perangkat kamu (notifikasi lokal), jadi tetap jalan meski tidak ada koneksi internet."
+              : "Notifications are processed directly on your device (local notifications), so they work even without internet."}
           </Text>
         </View>
 
@@ -208,8 +231,6 @@ export default function NotifikasiSettingsScreen() {
     </View>
   );
 }
-
-// ================== KOMPONEN KECIL ==================
 
 function Row({
   icon,

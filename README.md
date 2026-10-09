@@ -1,50 +1,129 @@
-# Welcome to your Expo app 👋
+<div align="center">
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+# 📋 TaskFlow
 
-## Get started
+### Aplikasi To-Do List Modern dengan Cloud Sync
 
-1. Install dependencies
+[![Expo](https://img.shields.io/badge/Expo-54.0-000020?logo=expo)](https://expo.dev)
+[![React Native](https://img.shields.io/badge/React_Native-0.81-61DAFB?logo=react)](https://reactnative.dev)
+[![Supabase](https://img.shields.io/badge/Supabase-PostgreSQL-3ECF8E?logo=supabase)](https://supabase.com)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.9-3178C6?logo=typescript)](https://typescriptlang.org)
+[![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-   ```bash
-   npm install
-   ```
+**Kelola tugasmu, tingkatkan produktivitasmu.**
 
-2. Start the app
+[Fitur](#-fitur) • [Screenshot](#-screenshot) • [Tech Stack](#️-tech-stack) • [Install](#-cara-install) • [Demo](#-demo)
 
-   ```bash
-   npx expo start
-   ```
+</div>
 
-In the output, you'll find options to open the app in a
+---
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+## ✨ Fitur
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+### 📝 Task Management
 
-## Get a fresh project
+- ✅ **Tambah, Edit, Hapus Task** — CRUD lengkap
+- ✅ **Sub-task / Checklist** — pecah task jadi langkah kecil
+- ✅ **Priority** — Rendah, Sedang, Tinggi dengan warna beda
+- ✅ **Kategori** — Kerja, Pribadi, Belajar, Belanja, Kesehatan, Lainnya
+- ✅ **Deadline** — tanggal + jam
+- ✅ **Recurring Task** — harian, mingguan, bulanan
+- ✅ **Attachment** — upload gambar / dokumen
+- ✅ **Streak / Habit** — tracking kebiasaan
 
-When you're ready, run:
+### 🔍 Search, Filter, Sort
+
+- ✅ **Search** — cari task by judul/deskripsi/kategori
+- ✅ **Filter** — by status, priority, kategori
+- ✅ **Sort** — Terbaru, Terlama, Prioritas, Deadline, A-Z, Z-A
+
+### 🔔 Notifikasi & Reminder
+
+- ✅ **Reminder Otomatis** — notifikasi sebelum deadline
+- ✅ **Custom Reminder** — 5 menit, 10 menit, 30 menit, 1 jam, 1 hari
+- ✅ **Local Notification** — gak butuh internet
+
+### 🎨 UI/UX
+
+- ✅ **Dark Mode** — tema gelap
+- ✅ **Multi-language** — 🇮🇩 Indonesia / 🇬🇧 English
+- ✅ **Onboarding** — tour intro pertama kali
+- ✅ **Haptic Feedback** — getar saat tap
+- ✅ **Toast / Snackbar** — notifikasi kecil
+- ✅ **Confirmation Dialog** — konfirmasi hapus
+- ✅ **Loading Skeleton** — placeholder saat loading
+- ✅ **Empty State** — tampilan kalo task kosong
+- ✅ **Animasi** — smooth transitions
+- ✅ **Pull to Refresh** — tarik ke bawah buat refresh
+
+### ☁️ Cloud & Data
+
+- ✅ **Supabase** — PostgreSQL + Auth + Storage
+- ✅ **Anonymous Auth** — auto sign-in tanpa register
+- ✅ **Multi-device Sync** — data sync ke semua device
+- ✅ **Backup & Restore** — JSON file
+- ✅ **Share Task** — share ke WhatsApp/email
+
+### 📊 Statistik & View
+
+- ✅ **Statistik** — chart bar + donut
+- ✅ **Kalender View** — liat task per tanggal
+- ✅ **Progress** — progress bar harian
+- ✅ **Streak** — berapa hari berturut-turut
+
+### 📱 Widget
+
+- ✅ **Android Widget** — task di homescreen
+
+---
+
+## 📸 Screenshot
+
+<div align="center">
+
+| Welcome                                               | Home                                               | Kalender                                               |
+| ----------------------------------------------------- | -------------------------------------------------- | ------------------------------------------------------ |
+| <img src="docs/screenshots/welcome.png" width="200"/> | <img src="docs/screenshots/home.png" width="200"/> | <img src="docs/screenshots/kalender.png" width="200"/> |
+
+| Statistik                                               | Tambah Tugas                                               | Pengaturan                                               |
+| ------------------------------------------------------- | ---------------------------------------------------------- | -------------------------------------------------------- |
+| <img src="docs/screenshots/statistik.png" width="200"/> | <img src="docs/screenshots/tambah-tugas.png" width="200"/> | <img src="docs/screenshots/pengaturan.png" width="200"/> |
+
+</div>
+
+---
+
+## 🛠️ Tech Stack
+
+| Komponen       | Tech                                 |
+| -------------- | ------------------------------------ |
+| **Framework**  | React Native + Expo SDK 54           |
+| **Routing**    | Expo Router 6 (file-based)           |
+| **Language**   | TypeScript 5.9                       |
+| **Styling**    | React Native StyleSheet + NativeWind |
+| **Backend**    | Supabase (PostgreSQL)                |
+| **Auth**       | Supabase Anonymous Auth              |
+| **Storage**    | Supabase Storage                     |
+| **State**      | React Context API                    |
+| **Notifikasi** | Expo Notifications                   |
+| **Widget**     | react-native-android-widget          |
+| **Chart**      | react-native-svg                     |
+| **Kalender**   | react-native-calendars               |
+
+---
+
+## 🚀 Cara Install
+
+### Prasyarat
+
+- Node.js 18+
+- npm / yarn
+- Expo CLI
+- Android Studio (buat build APK)
+
+### Step 1: Clone Repo
 
 ```bash
-npm run reset-project
+git clone https://github.com/MuhammadReki/TaskFlow.git
+cd TaskFlow
 ```
-
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
-
-## Learn more
-
-To learn more about developing your project with Expo, look at the following resources:
-
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
-
-## Join the community
-
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.

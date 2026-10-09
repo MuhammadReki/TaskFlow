@@ -1,5 +1,8 @@
+import AnimatedTaskCard from "@/components/AnimatedTaskCard";
 import SearchModal from "@/components/SearchModal";
+import { TaskSkeleton } from "@/components/Skeleton";
 import SortModal, { SortOption } from "@/components/SortModal";
+import { useLanguage } from "@/context/LanguageContext";
 import { useTasks } from "@/context/TasksContext";
 import { useTheme } from "@/context/ThemeContext";
 import { hapticLight, hapticMedium, hapticSelection } from "@/lib/haptics";
@@ -7,6 +10,7 @@ import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import React, { useMemo, useState } from "react";
 import {
+  RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
@@ -27,13 +31,18 @@ type Task = {
   deadlineDate?: string;
 };
 
-const FILTERS = ["Semua", "Hari Ini", "Mendatang", "Selesai"];
+const FILTERS = [
+  { key: "Semua", label: "semua" },
+  { key: "Hari Ini", label: "hariIni" },
+  { key: "Mendatang", label: "mendatang" },
+  { key: "Selesai", label: "selesai" },
+];
 
 const PRIORITY_FILTERS = [
-  { key: "Semua", label: "Semua" },
-  { key: "Tinggi", label: "Tinggi" },
-  { key: "Sedang", label: "Sedang" },
-  { key: "Rendah", label: "Rendah" },
+  { key: "Semua", labelKey: "semua" },
+  { key: "Tinggi", labelKey: "tinggi" },
+  { key: "Sedang", labelKey: "sedang" },
+  { key: "Rendah", labelKey: "rendah" },
 ];
 
 const PRIORITY_WEIGHT: Record<string, number> = {
@@ -42,24 +51,26 @@ const PRIORITY_WEIGHT: Record<string, number> = {
   Rendah: 1,
 };
 
-const SORT_LABEL: Record<SortOption, string> = {
-  terbaru: "Terbaru",
-  terlama: "Terlama",
-  prioritas: "Prioritas",
-  deadline: "Deadline",
-  az: "A-Z",
-  za: "Z-A",
-};
-
 export default function HomeScreen() {
-  const { tasks, toggleTask } = useTasks();
+  const { tasks, toggleTask, loadTasks, loading } = useTasks();
   const { colors } = useTheme();
+  const { t } = useLanguage();
   const [activeFilter, setActiveFilter] = useState("Semua");
   const [activePriority, setActivePriority] = useState("Semua");
   const [searchQuery, setSearchQuery] = useState("");
   const [showSearch, setShowSearch] = useState(false);
   const [sortBy, setSortBy] = useState<SortOption>("terbaru");
   const [showSort, setShowSort] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const SORT_LABEL: Record<SortOption, string> = {
+    terbaru: t("terbaru"),
+    terlama: t("terlama"),
+    prioritas: t("prioritas"),
+    deadline: t("deadline"),
+    az: t("az"),
+    za: t("za"),
+  };
 
   const PRIORITY_STYLE: Record<string, { bg: string; text: string }> = {
     Tinggi: { bg: colors.dangerBg, text: colors.danger },
@@ -72,16 +83,16 @@ export default function HomeScreen() {
 
     switch (activeFilter) {
       case "Selesai":
-        result = result.filter((t) => t.completed);
+        result = result.filter((t: Task) => t.completed);
         break;
       case "Hari Ini":
         result = result.filter(
-          (t) => t.dateLabel === "Hari ini" && !t.completed,
+          (t: Task) => t.dateLabel === "Hari ini" && !t.completed,
         );
         break;
       case "Mendatang":
         result = result.filter(
-          (t) => t.dateLabel !== "Hari ini" && !t.completed,
+          (t: Task) => t.dateLabel !== "Hari ini" && !t.completed,
         );
         break;
       default:
@@ -89,13 +100,13 @@ export default function HomeScreen() {
     }
 
     if (activePriority !== "Semua") {
-      result = result.filter((t) => t.priority === activePriority);
+      result = result.filter((t: Task) => t.priority === activePriority);
     }
 
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase().trim();
       result = result.filter(
-        (t) =>
+        (t: Task) =>
           t.title?.toLowerCase().includes(q) ||
           t.description?.toLowerCase().includes(q) ||
           t.category?.toLowerCase().includes(q),
@@ -111,13 +122,13 @@ export default function HomeScreen() {
         break;
       case "prioritas":
         sorted.sort(
-          (a, b) =>
+          (a: Task, b: Task) =>
             (PRIORITY_WEIGHT[b.priority || "Rendah"] || 0) -
             (PRIORITY_WEIGHT[a.priority || "Rendah"] || 0),
         );
         break;
       case "deadline":
-        sorted.sort((a, b) => {
+        sorted.sort((a: Task, b: Task) => {
           if (!a.deadlineDate) return 1;
           if (!b.deadlineDate) return -1;
           return (
@@ -127,10 +138,14 @@ export default function HomeScreen() {
         });
         break;
       case "az":
-        sorted.sort((a, b) => (a.title || "").localeCompare(b.title || ""));
+        sorted.sort((a: Task, b: Task) =>
+          (a.title || "").localeCompare(b.title || ""),
+        );
         break;
       case "za":
-        sorted.sort((a, b) => (b.title || "").localeCompare(a.title || ""));
+        sorted.sort((a: Task, b: Task) =>
+          (b.title || "").localeCompare(a.title || ""),
+        );
         break;
     }
 
@@ -138,7 +153,7 @@ export default function HomeScreen() {
   }, [tasks, activeFilter, activePriority, searchQuery, sortBy]);
 
   const totalTasks = tasks.length;
-  const doneTasks = tasks.filter((t) => t.completed).length;
+  const doneTasks = tasks.filter((t: Task) => t.completed).length;
   const progressPercent =
     totalTasks === 0 ? 0 : Math.round((doneTasks / totalTasks) * 100);
 
@@ -164,6 +179,12 @@ export default function HomeScreen() {
     setSearchQuery("");
   };
 
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await loadTasks();
+    setRefreshing(false);
+  };
+
   return (
     <View style={[styles.container, { backgroundColor: colors.bg }]}>
       <View style={styles.header}>
@@ -171,6 +192,21 @@ export default function HomeScreen() {
           Task<Text style={{ color: colors.primary }}>Flow</Text>
         </Text>
         <View style={styles.headerIcons}>
+          <TouchableOpacity
+            style={[
+              styles.iconButton,
+              {
+                backgroundColor: colors.card,
+                shadowOpacity: colors.shadowOpacity,
+              },
+            ]}
+            onPress={() => {
+              hapticLight();
+              router.push("/kalender");
+            }}
+          >
+            <Ionicons name="calendar-outline" size={20} color={colors.text} />
+          </TouchableOpacity>
           <TouchableOpacity
             style={[
               styles.iconButton,
@@ -202,6 +238,14 @@ export default function HomeScreen() {
       </View>
 
       <ScrollView
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={colors.primary}
+            colors={[colors.primary]}
+          />
+        }
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
       >
@@ -216,7 +260,7 @@ export default function HomeScreen() {
         >
           <View style={styles.progressHeaderRow}>
             <Text style={[styles.progressLabel, { color: colors.text }]}>
-              Progress Hari Ini
+              {t("progressHariIni")}
             </Text>
             <Text style={[styles.progressPercent, { color: colors.primary }]}>
               {progressPercent}%
@@ -244,7 +288,7 @@ export default function HomeScreen() {
             <Text
               style={[styles.progressSubtext, { color: colors.textSecondary }]}
             >
-              {doneTasks} dari {totalTasks} tugas selesai
+              {doneTasks} / {totalTasks} {t("tugasSelesai")}
             </Text>
             <TouchableOpacity
               style={[
@@ -262,7 +306,7 @@ export default function HomeScreen() {
                 color={colors.primary}
               />
               <Text style={[styles.statsButtonText, { color: colors.primary }]}>
-                Lihat Statistik
+                {t("lihatStatistik")}
               </Text>
               <Ionicons
                 name="chevron-forward"
@@ -282,7 +326,7 @@ export default function HomeScreen() {
               style={[styles.searchBannerText, { color: colors.primary }]}
               numberOfLines={1}
             >
-              Hasil untuk: "{searchQuery}"
+              {t("hasilUntuk")}: "{searchQuery}"
             </Text>
             <TouchableOpacity onPress={() => setSearchQuery("")}>
               <Ionicons name="close-circle" size={18} color={colors.primary} />
@@ -297,10 +341,10 @@ export default function HomeScreen() {
           contentContainerStyle={styles.filterRowContent}
         >
           {FILTERS.map((filter) => {
-            const active = filter === activeFilter;
+            const active = filter.key === activeFilter;
             return (
               <TouchableOpacity
-                key={filter}
+                key={filter.key}
                 style={[
                   styles.filterChip,
                   {
@@ -310,10 +354,10 @@ export default function HomeScreen() {
                 ]}
                 onPress={() => {
                   hapticSelection();
-                  setActiveFilter(filter);
+                  setActiveFilter(filter.key);
                 }}
               >
-                {filter === "Semua" && (
+                {filter.key === "Semua" && (
                   <Ionicons
                     name="menu"
                     size={14}
@@ -327,7 +371,7 @@ export default function HomeScreen() {
                     { color: active ? "#fff" : colors.textSecondary },
                   ]}
                 >
-                  {filter}
+                  {t(filter.label)}
                 </Text>
               </TouchableOpacity>
             );
@@ -338,12 +382,12 @@ export default function HomeScreen() {
           <Text
             style={[styles.priorityFilterLabel, { color: colors.textMuted }]}
           >
-            Prioritas
+            {t("prioritas")}
           </Text>
           {hasActiveFilter && (
             <TouchableOpacity onPress={handleResetFilter}>
               <Text style={[styles.resetFilterText, { color: colors.primary }]}>
-                Reset
+                {t("reset")}
               </Text>
             </TouchableOpacity>
           )}
@@ -382,7 +426,7 @@ export default function HomeScreen() {
                     { color: active ? "#fff" : style.text },
                   ]}
                 >
-                  {p.label}
+                  {t(p.labelKey)}
                 </Text>
               </TouchableOpacity>
             );
@@ -393,13 +437,13 @@ export default function HomeScreen() {
           <View>
             <Text style={[styles.sectionTitle, { color: colors.text }]}>
               {searchQuery
-                ? "Hasil Pencarian"
+                ? t("hasilPencarian")
                 : activePriority !== "Semua"
-                  ? `Prioritas ${activePriority}`
-                  : "Daftar Tugas"}
+                  ? `${t("prioritas")} ${t(activePriority.toLowerCase())}`
+                  : t("daftarTugas")}
             </Text>
             <Text style={[styles.resultCount, { color: colors.textMuted }]}>
-              {filteredTasks.length} tugas · {SORT_LABEL[sortBy]}
+              {filteredTasks.length} {t("tugas")} · {SORT_LABEL[sortBy]}
             </Text>
           </View>
 
@@ -412,35 +456,52 @@ export default function HomeScreen() {
           >
             <Ionicons name="swap-vertical" size={14} color={colors.primary} />
             <Text style={[styles.sortButtonText, { color: colors.primary }]}>
-              Urutkan
+              {t("urutkan")}
             </Text>
           </TouchableOpacity>
         </View>
 
-        {filteredTasks.length === 0 ? (
+        {loading ? (
+          <>
+            <TaskSkeleton />
+            <TaskSkeleton />
+            <TaskSkeleton />
+          </>
+        ) : filteredTasks.length === 0 ? (
           <View style={styles.emptyState}>
-            <Ionicons
-              name={
-                searchQuery ? "search-outline" : "checkmark-done-circle-outline"
-              }
-              size={48}
-              color={colors.primaryAccent}
-            />
+            <View
+              style={[
+                styles.emptyIconBox,
+                { backgroundColor: colors.primaryBg },
+              ]}
+            >
+              <Ionicons
+                name={
+                  searchQuery
+                    ? "search-outline"
+                    : activePriority !== "Semua"
+                      ? "flag-outline"
+                      : "checkmark-done-circle-outline"
+                }
+                size={56}
+                color={colors.primary}
+              />
+            </View>
             <Text style={[styles.emptyStateTitle, { color: colors.text }]}>
               {searchQuery
-                ? "Gak ada hasil"
+                ? t("gakAdaHasil")
                 : activePriority !== "Semua"
-                  ? `Gak ada tugas prioritas ${activePriority}`
-                  : "Belum ada tugas"}
+                  ? `${t("prioritas")} ${t(activePriority.toLowerCase())}`
+                  : t("belumAdaTugas")}
             </Text>
             <Text
               style={[styles.emptyStateSubtitle, { color: colors.textMuted }]}
             >
               {searchQuery
-                ? `Gak ada tugas yang cocok dengan "${searchQuery}"`
+                ? t("cobaKataKunciLain")
                 : activePriority !== "Semua"
-                  ? "Coba pilih prioritas lain atau reset filter"
-                  : "Tambahkan tugas baru dengan tombol + di bawah"}
+                  ? t("cobaPilihPrioritasLain")
+                  : t("yukMulaiProduktif")}
             </Text>
             {hasActiveFilter && (
               <TouchableOpacity
@@ -451,110 +512,31 @@ export default function HomeScreen() {
                 onPress={handleResetFilter}
               >
                 <Ionicons name="refresh" size={16} color="#fff" />
-                <Text style={styles.resetButtonText}>Reset Filter</Text>
+                <Text style={styles.resetButtonText}>{t("resetFilter")}</Text>
               </TouchableOpacity>
             )}
           </View>
         ) : (
-          filteredTasks.map((task) => {
+          filteredTasks.map((task: Task, index: number) => {
             const priorityStyle =
               PRIORITY_STYLE[task.priority || "Rendah"] ||
               PRIORITY_STYLE.Rendah;
 
             return (
-              <TouchableOpacity
+              <AnimatedTaskCard
                 key={task.id}
-                style={[
-                  styles.taskCard,
-                  {
-                    backgroundColor: colors.card,
-                    shadowOpacity: colors.shadowOpacity,
-                  },
-                ]}
-                activeOpacity={0.7}
+                task={task}
+                index={index}
+                priorityStyle={priorityStyle}
                 onPress={() => {
                   hapticLight();
                   router.push(`/tambah-tugas?id=${task.id}`);
                 }}
-              >
-                <TouchableOpacity
-                  style={[
-                    styles.taskCheckbox,
-                    { borderColor: colors.border },
-                    task.completed && {
-                      backgroundColor: colors.primary,
-                      borderColor: colors.primary,
-                    },
-                  ]}
-                  onPress={() => {
-                    hapticLight();
-                    toggleTask(task.id);
-                  }}
-                >
-                  {task.completed && (
-                    <Ionicons name="checkmark" size={16} color="#fff" />
-                  )}
-                </TouchableOpacity>
-
-                <View style={styles.taskInfo}>
-                  <Text
-                    style={[
-                      styles.taskTitle,
-                      { color: colors.text },
-                      task.completed && {
-                        textDecorationLine: "line-through",
-                        color: colors.textMuted,
-                      },
-                    ]}
-                  >
-                    {task.title}
-                  </Text>
-
-                  <View style={styles.taskDateRow}>
-                    <Ionicons
-                      name="time-outline"
-                      size={12}
-                      color={colors.textMuted}
-                    />
-                    <Text
-                      style={[styles.taskDateText, { color: colors.textMuted }]}
-                    >
-                      {task.date} {task.dateLabel ? `• ${task.dateLabel}` : ""}
-                    </Text>
-                  </View>
-
-                  {task.priority ? (
-                    <View
-                      style={[
-                        styles.priorityBadge,
-                        { backgroundColor: priorityStyle.bg },
-                      ]}
-                    >
-                      <Text
-                        style={[
-                          styles.priorityText,
-                          { color: priorityStyle.text },
-                        ]}
-                      >
-                        {task.priority}
-                      </Text>
-                    </View>
-                  ) : null}
-                </View>
-
-                <View
-                  style={[
-                    styles.taskIconBox,
-                    { backgroundColor: colors.primaryBg },
-                  ]}
-                >
-                  <Ionicons
-                    name={(task.icon as any) || "document-text-outline"}
-                    size={18}
-                    color={colors.primary}
-                  />
-                </View>
-              </TouchableOpacity>
+                onToggle={() => {
+                  hapticLight();
+                  toggleTask(task.id);
+                }}
+              />
             );
           })
         )}
@@ -562,18 +544,22 @@ export default function HomeScreen() {
         <View style={styles.bottomSpacer} />
       </ScrollView>
 
+      {/* FAB — dengan zIndex biar gak ketutup */}
       <TouchableOpacity
         style={[
           styles.fab,
           {
             backgroundColor: colors.primary,
             shadowColor: colors.primary,
+            zIndex: 999,
+            elevation: 999,
           },
         ]}
         onPress={() => {
           hapticMedium();
           router.push("/tambah-tugas");
         }}
+        activeOpacity={0.7}
       >
         <Ionicons name="add" size={28} color="#fff" />
       </TouchableOpacity>
@@ -607,14 +593,14 @@ const styles = StyleSheet.create({
     paddingBottom: 8,
   },
   headerTitle: { fontSize: 24, fontWeight: "800" },
-  headerIcons: { flexDirection: "row", gap: 10 },
+  headerIcons: { flexDirection: "row", gap: 8 },
   iconButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
     alignItems: "center",
     justifyContent: "center",
-    marginLeft: 8,
+    marginLeft: 4,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowRadius: 4,
@@ -727,56 +713,18 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   sortButtonText: { fontSize: 12, fontWeight: "700" },
-  taskCard: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 12,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 3 },
-    shadowRadius: 8,
-    elevation: 1,
-  },
-  taskCheckbox: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    borderWidth: 2,
-    alignItems: "center",
-    justifyContent: "center",
-    marginRight: 12,
-    marginTop: 2,
-  },
-  taskInfo: { flex: 1 },
-  taskTitle: { fontSize: 15, fontWeight: "700" },
-  taskDateRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginTop: 6,
-    gap: 4,
-  },
-  taskDateText: { fontSize: 12, marginLeft: 4 },
-  priorityBadge: {
-    alignSelf: "flex-start",
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 10,
-    marginTop: 8,
-  },
-  priorityText: { fontSize: 11, fontWeight: "700" },
-  taskIconBox: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    alignItems: "center",
-    justifyContent: "center",
-    marginLeft: 8,
-  },
   emptyState: {
     alignItems: "center",
     justifyContent: "center",
     paddingVertical: 60,
+  },
+  emptyIconBox: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 16,
   },
   emptyStateTitle: { fontSize: 18, fontWeight: "700", marginTop: 12 },
   emptyStateSubtitle: {

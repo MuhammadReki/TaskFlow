@@ -1,14 +1,17 @@
+import { useLanguage } from "@/context/LanguageContext";
 import { useTasks } from "@/context/TasksContext";
 import { useTheme } from "@/context/ThemeContext";
+import { useToast } from "@/context/ToastContext";
 import { hapticLight, hapticSelection, hapticWarning } from "@/lib/haptics";
 import { Ionicons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as DocumentPicker from "expo-document-picker";
 import * as FileSystem from "expo-file-system";
 import { router } from "expo-router";
 import * as Sharing from "expo-sharing";
-import React from "react";
+import React, { useState } from "react";
 import {
-  Alert,
+  Modal,
   ScrollView,
   StyleSheet,
   Switch,
@@ -34,8 +37,11 @@ const CYAN = "#17A2B8";
 export default function PengaturanScreen() {
   const { tasks, replaceAllTasks, resetAllTasks } = useTasks();
   const { isDark, colors, toggleTheme } = useTheme();
+  const { showToast } = useToast();
+  const { language, changeLanguage, t } = useLanguage();
+  const [showLanguageModal, setShowLanguageModal] = useState(false);
 
-  // ================== BACKUP DATA KE FILE JSON ==================
+  // ================== BACKUP DATA ==================
   const handleBackup = async () => {
     hapticLight();
     try {
@@ -53,14 +59,14 @@ export default function PengaturanScreen() {
           dialogTitle: "Simpan Backup TaskFlow",
         });
       } else {
-        Alert.alert("Backup berhasil", `File tersimpan di:\n${file.uri}`);
+        showToast(t("berhasil"), "success");
       }
     } catch (error: any) {
-      Alert.alert("Gagal backup", error.message);
+      showToast(error.message, "error");
     }
   };
 
-  // ================== RESTORE DATA DARI FILE JSON ==================
+  // ================== RESTORE DATA ==================
   const handleRestore = async () => {
     hapticLight();
     try {
@@ -77,47 +83,29 @@ export default function PengaturanScreen() {
       const parsed = JSON.parse(content);
 
       if (!Array.isArray(parsed)) {
-        Alert.alert("File tidak valid", "Format file JSON tidak sesuai.");
+        showToast("Format file JSON tidak sesuai", "error");
         return;
       }
 
-      Alert.alert(
-        "Restore Data",
-        `Ditemukan ${parsed.length} tugas di file ini. Data yang ada sekarang akan diganti. Lanjutkan?`,
-        [
-          { text: "Batal", style: "cancel" },
-          {
-            text: "Restore",
-            onPress: () => {
-              replaceAllTasks(parsed);
-              Alert.alert("Berhasil", "Data berhasil dipulihkan.");
-            },
-          },
-        ],
-      );
+      await replaceAllTasks(parsed);
+      showToast(t("berhasil"), "success");
     } catch (error: any) {
-      Alert.alert("Gagal restore", error.message);
+      showToast(error.message, "error");
     }
   };
 
-  // ================== RESET SEMUA DATA ==================
+  // ================== RESET DATA ==================
   const handleReset = () => {
     hapticWarning();
-    Alert.alert(
-      "Reset Semua Data",
-      "Semua tugas dan pengaturan akan dihapus permanen. Tindakan ini tidak bisa dibatalkan. Lanjutkan?",
-      [
-        { text: "Batal", style: "cancel" },
-        {
-          text: "Hapus Semua",
-          style: "destructive",
-          onPress: () => {
-            resetAllTasks();
-            Alert.alert("Selesai", "Semua data sudah dihapus.");
-          },
-        },
-      ],
-    );
+    resetAllTasks();
+    showToast(t("berhasil"), "info");
+  };
+
+  // ================== LIHAT ONBOARDING ==================
+  const handleViewOnboarding = async () => {
+    hapticLight();
+    await AsyncStorage.removeItem("hasSeenOnboarding");
+    router.push("/onboarding");
   };
 
   return (
@@ -125,14 +113,16 @@ export default function PengaturanScreen() {
       style={[styles.container, { backgroundColor: colors.bg }]}
       showsVerticalScrollIndicator={false}
     >
-      {/* ================= HEADER ================= */}
-      <Text style={[styles.title, { color: colors.text }]}>Pengaturan</Text>
+      {/* HEADER */}
+      <Text style={[styles.title, { color: colors.text }]}>
+        {t("pengaturan")}
+      </Text>
       <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-        Kelola preferensi dan data aplikasi Anda
+        {t("kelolaPreferensi")}
       </Text>
 
-      {/* ================= TAMPILAN ================= */}
-      <SectionLabel text="TAMPILAN" colors={colors} />
+      {/* TAMPILAN */}
+      <SectionLabel text={t("tampilan")} colors={colors} />
       <View
         style={[
           styles.card,
@@ -143,8 +133,8 @@ export default function PengaturanScreen() {
           icon={isDark ? "moon" : "sunny-outline"}
           iconBg={colors.primaryBg}
           iconColor={colors.primary}
-          title="Dark Mode"
-          subtitle={isDark ? "Aktif" : "Nonaktif"}
+          title={t("darkMode")}
+          subtitle={isDark ? t("aktif") : t("nonaktif")}
           colors={colors}
           right={
             <Switch
@@ -158,10 +148,24 @@ export default function PengaturanScreen() {
             />
           }
         />
+        <Divider colors={colors} />
+        <SettingRow
+          icon="language-outline"
+          iconBg={colors.infoBg}
+          iconColor={colors.info}
+          title={t("bahasa")}
+          subtitle={language === "id" ? "🇮🇩 Indonesia" : "🇬🇧 English"}
+          onPress={() => {
+            hapticSelection();
+            setShowLanguageModal(true);
+          }}
+          showArrow
+          colors={colors}
+        />
       </View>
 
-      {/* ================= DATA & BACKUP ================= */}
-      <SectionLabel text="DATA & BACKUP" colors={colors} />
+      {/* DATA & BACKUP */}
+      <SectionLabel text={t("dataBackup")} colors={colors} />
       <View
         style={[
           styles.card,
@@ -172,8 +176,8 @@ export default function PengaturanScreen() {
           icon="briefcase-outline"
           iconBg={GREEN_BG}
           iconColor={GREEN_DARK}
-          title="Backup Data (JSON)"
-          subtitle="Simpan data tugas ke file JSON"
+          title={t("backupData")}
+          subtitle={t("backupSubtitle")}
           onPress={handleBackup}
           showArrow
           colors={colors}
@@ -183,8 +187,8 @@ export default function PengaturanScreen() {
           icon="arrow-down-outline"
           iconBg={BLUE_BG}
           iconColor={BLUE}
-          title="Restore Data (JSON)"
-          subtitle="Pulihkan data dari file JSON"
+          title={t("restoreData")}
+          subtitle={t("restoreSubtitle")}
           onPress={handleRestore}
           showArrow
           colors={colors}
@@ -194,13 +198,15 @@ export default function PengaturanScreen() {
           icon="information-circle-outline"
           iconBg={PURPLE_BG}
           iconColor={PURPLE}
-          title="Tentang Backup"
-          subtitle="Pelajari cara backup dan restore data"
+          title={t("tentangBackup")}
+          subtitle={t("tentangBackupSubtitle")}
           onPress={() => {
             hapticLight();
-            Alert.alert(
-              "Tentang Backup",
-              "Backup akan menyimpan seluruh data tugas kamu ke file JSON yang bisa disimpan di HP atau cloud storage. File ini bisa dipakai lagi lewat menu Restore Data kalau suatu saat kamu ganti HP atau install ulang aplikasi.",
+            showToast(
+              language === "id"
+                ? "Backup nyimpen data tugas ke file JSON. Bisa di-restore kapan aja."
+                : "Backup saves task data to a JSON file. Can be restored anytime.",
+              "info",
             );
           }}
           showArrow
@@ -208,8 +214,8 @@ export default function PengaturanScreen() {
         />
       </View>
 
-      {/* ================= KEAMANAN & DATA ================= */}
-      <SectionLabel text="KEAMANAN & DATA" colors={colors} />
+      {/* KEAMANAN & DATA */}
+      <SectionLabel text={t("keamananData")} colors={colors} />
       <View
         style={[
           styles.card,
@@ -220,8 +226,8 @@ export default function PengaturanScreen() {
           icon="trash-outline"
           iconBg={RED_BG}
           iconColor={RED}
-          title="Reset Semua Data"
-          subtitle="Hapus semua tugas dan pengaturan secara permanen"
+          title={t("resetData")}
+          subtitle={t("resetDataSubtitle")}
           onPress={handleReset}
           showArrow
           danger
@@ -229,8 +235,8 @@ export default function PengaturanScreen() {
         />
       </View>
 
-      {/* ================= LAINNYA ================= */}
-      <SectionLabel text="LAINNYA" colors={colors} />
+      {/* LAINNYA */}
+      <SectionLabel text={t("lainnya")} colors={colors} />
       <View
         style={[
           styles.card,
@@ -238,11 +244,22 @@ export default function PengaturanScreen() {
         ]}
       >
         <SettingRow
+          icon="play-circle-outline"
+          iconBg={colors.primaryBg}
+          iconColor={colors.primary}
+          title={t("lihatOnboarding")}
+          subtitle={t("lihatOnboardingSubtitle")}
+          onPress={handleViewOnboarding}
+          showArrow
+          colors={colors}
+        />
+        <Divider colors={colors} />
+        <SettingRow
           icon="notifications-outline"
           iconBg={ORANGE_BG}
           iconColor={ORANGE}
-          title="Notifikasi"
-          subtitle="Kelola notifikasi pengingat tugas"
+          title={t("notifikasi")}
+          subtitle={t("notifikasiSubtitle")}
           onPress={() => {
             hapticLight();
             router.push("/notifikasi-settings");
@@ -255,8 +272,8 @@ export default function PengaturanScreen() {
           icon="help-circle-outline"
           iconBg={CYAN_BG}
           iconColor={CYAN}
-          title="Bantuan & FAQ"
-          subtitle="Temukan jawaban dan panduan penggunaan"
+          title={t("bantuanFaq")}
+          subtitle={t("bantuanFaqSubtitle")}
           onPress={() => {
             hapticLight();
             router.push("/bantuan-faq");
@@ -266,24 +283,91 @@ export default function PengaturanScreen() {
         />
       </View>
 
-      {/* ================= BANNER ONLINE ================= */}
+      {/* BANNER ONLINE */}
       <View
         style={[styles.onlineBanner, { backgroundColor: colors.primaryBg }]}
       >
         <Ionicons name="cloud-done" size={22} color={colors.primary} />
         <View style={{ flex: 1, marginLeft: 12 }}>
           <Text style={[styles.onlineTitle, { color: colors.primary }]}>
-            TaskFlow Online
+            {t("taskflowOnline")}
           </Text>
           <Text
             style={[styles.onlineSubtitle, { color: colors.textSecondary }]}
           >
-            Data tersimpan di cloud (Supabase). Bisa diakses dari mana aja.
+            {t("taskflowOnlineSubtitle")}
           </Text>
         </View>
       </View>
 
       <View style={{ height: 40 }} />
+
+      {/* MODAL PILIH BAHASA */}
+      <Modal
+        visible={showLanguageModal}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowLanguageModal(false)}
+      >
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setShowLanguageModal(false)}
+        >
+          <View style={[styles.modalSheet, { backgroundColor: colors.card }]}>
+            <Text style={[styles.modalTitle, { color: colors.text }]}>
+              {t("pilihBahasa")}
+            </Text>
+
+            <TouchableOpacity
+              style={[
+                styles.modalOption,
+                { borderBottomColor: colors.borderLight },
+              ]}
+              onPress={() => {
+                hapticSelection();
+                changeLanguage("id");
+                setShowLanguageModal(false);
+              }}
+            >
+              <Text style={[styles.modalOptionText, { color: colors.text }]}>
+                🇮🇩 Indonesia
+              </Text>
+              {language === "id" && (
+                <Ionicons name="checkmark" size={22} color={colors.primary} />
+              )}
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[
+                styles.modalOption,
+                { borderBottomColor: colors.borderLight },
+              ]}
+              onPress={() => {
+                hapticSelection();
+                changeLanguage("en");
+                setShowLanguageModal(false);
+              }}
+            >
+              <Text style={[styles.modalOptionText, { color: colors.text }]}>
+                🇬🇧 English
+              </Text>
+              {language === "en" && (
+                <Ionicons name="checkmark" size={22} color={colors.primary} />
+              )}
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.modalCancel}
+              onPress={() => setShowLanguageModal(false)}
+            >
+              <Text style={[styles.modalCancelText, { color: colors.danger }]}>
+                {t("batal")}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Modal>
     </ScrollView>
   );
 }
@@ -359,18 +443,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 37,
   },
-
-  title: {
-    fontSize: 26,
-    fontWeight: "800",
-    marginTop: 16,
-  },
-  subtitle: {
-    fontSize: 13,
-    marginTop: 4,
-    marginBottom: 8,
-  },
-
+  title: { fontSize: 26, fontWeight: "800", marginTop: 16 },
+  subtitle: { fontSize: 13, marginTop: 4, marginBottom: 8 },
   sectionLabel: {
     fontSize: 12,
     fontWeight: "700",
@@ -378,7 +452,6 @@ const styles = StyleSheet.create({
     marginTop: 24,
     marginBottom: 10,
   },
-
   card: {
     borderRadius: 16,
     shadowColor: "#000",
@@ -387,7 +460,6 @@ const styles = StyleSheet.create({
     elevation: 1,
     overflow: "hidden",
   },
-
   row: {
     flexDirection: "row",
     alignItems: "center",
@@ -402,22 +474,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  rowTextWrap: {
-    flex: 1,
-  },
-  rowTitle: {
-    fontSize: 14,
-    fontWeight: "700",
-  },
-  rowSubtitle: {
-    fontSize: 12,
-    marginTop: 2,
-  },
-  divider: {
-    height: 1,
-    marginLeft: 68,
-  },
-
+  rowTextWrap: { flex: 1 },
+  rowTitle: { fontSize: 14, fontWeight: "700" },
+  rowSubtitle: { fontSize: 12, marginTop: 2 },
+  divider: { height: 1, marginLeft: 68 },
   onlineBanner: {
     flexDirection: "row",
     alignItems: "center",
@@ -425,13 +485,29 @@ const styles = StyleSheet.create({
     padding: 16,
     marginTop: 28,
   },
-  onlineTitle: {
-    fontSize: 13,
-    fontWeight: "800",
+  onlineTitle: { fontSize: 13, fontWeight: "800" },
+  onlineSubtitle: { fontSize: 11, marginTop: 2, lineHeight: 15 },
+  // Modal
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.4)",
+    justifyContent: "flex-end",
   },
-  onlineSubtitle: {
-    fontSize: 11,
-    marginTop: 2,
-    lineHeight: 15,
+  modalSheet: {
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    padding: 20,
+    paddingBottom: 30,
   },
+  modalTitle: { fontSize: 16, fontWeight: "800", marginBottom: 12 },
+  modalOption: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+  },
+  modalOptionText: { fontSize: 15, fontWeight: "600" },
+  modalCancel: { marginTop: 12, paddingVertical: 14, alignItems: "center" },
+  modalCancelText: { fontSize: 14, fontWeight: "700" },
 });

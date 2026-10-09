@@ -1,4 +1,8 @@
 import { createContext, useContext, useEffect, useState } from "react";
+import {
+  cancelNotification,
+  scheduleTaskNotification,
+} from "../lib/notifications";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "./AuthContext";
 
@@ -13,7 +17,6 @@ export function TasksProvider({ children }) {
     if (user) {
       loadTasks();
     } else {
-      // Kalau user belum ada, stop loading
       setLoading(false);
     }
   }, [user]);
@@ -46,6 +49,10 @@ export function TasksProvider({ children }) {
         category: t.kategori,
         completed: t.completed,
         icon: getIconByCategory(t.kategori),
+        recurring: t.recurring || "none",
+        streakCount: t.streak_count || 0,
+        attachmentUrl: t.attachment_url || null,
+        attachmentName: t.attachment_name || null,
         reminderEnabled: false,
         reminderTime: null,
       }));
@@ -60,7 +67,6 @@ export function TasksProvider({ children }) {
 
   // ========== TAMBAH TASK ==========
   const addTask = async (newTask) => {
-    // 🛡️ GUARD: user harus ada
     if (!user) {
       console.log("❌ User belum siap, gak bisa tambah task");
       throw new Error("User belum siap. Tunggu sebentar ya.");
@@ -76,6 +82,9 @@ export function TasksProvider({ children }) {
           kategori: newTask.category || "Lainnya",
           priority: newTask.priority || "Sedang",
           deadline: newTask.deadlineDate || null,
+          recurring: newTask.recurring || "none",
+          attachment_url: newTask.attachmentUrl || null,
+          attachment_name: newTask.attachmentName || null,
         })
         .select()
         .single();
@@ -99,7 +108,21 @@ export function TasksProvider({ children }) {
         category: data.kategori,
         completed: data.completed,
         icon: getIconByCategory(data.kategori),
+        recurring: data.recurring || "none",
+        streakCount: data.streak_count || 0,
+        attachmentUrl: data.attachment_url || null,
+        attachmentName: data.attachment_name || null,
       };
+
+      if (data.deadline) {
+        const reminderBefore = newTask.reminderBefore || 30;
+        await scheduleTaskNotification(
+          data.id,
+          data.judul,
+          new Date(data.deadline),
+          reminderBefore,
+        );
+      }
 
       setTasks((prev) => [mapped, ...prev]);
       return mapped;
@@ -122,6 +145,9 @@ export function TasksProvider({ children }) {
           kategori: updatedData.category,
           priority: updatedData.priority,
           deadline: updatedData.deadlineDate,
+          recurring: updatedData.recurring || "none",
+          attachment_url: updatedData.attachmentUrl || null,
+          attachment_name: updatedData.attachmentName || null,
           updated_at: new Date().toISOString(),
         })
         .eq("id", id)
@@ -129,6 +155,18 @@ export function TasksProvider({ children }) {
         .single();
 
       if (error) throw error;
+
+      await cancelNotification(id);
+
+      if (data.deadline) {
+        const reminderBefore = updatedData.reminderBefore || 30;
+        await scheduleTaskNotification(
+          data.id,
+          data.judul,
+          new Date(data.deadline),
+          reminderBefore,
+        );
+      }
 
       await loadTasks();
       return data;
@@ -143,6 +181,8 @@ export function TasksProvider({ children }) {
     if (!user) throw new Error("User belum siap");
 
     try {
+      await cancelNotification(id);
+
       const { error } = await supabase.from("tasks").delete().eq("id", id);
       if (error) throw error;
       setTasks((prev) => prev.filter((t) => t.id !== id));
@@ -160,13 +200,28 @@ export function TasksProvider({ children }) {
     if (!task) return;
 
     try {
+      const newCompleted = !task.completed;
+      const newStreak = newCompleted ? (task.streakCount || 0) + 1 : 0;
+
       const { error } = await supabase
         .from("tasks")
-        .update({ completed: !task.completed })
+        .update({
+          completed: newCompleted,
+          streak_count: newStreak,
+        })
         .eq("id", id);
       if (error) throw error;
+
+      if (newCompleted) {
+        await cancelNotification(id);
+      }
+
       setTasks((prev) =>
-        prev.map((t) => (t.id === id ? { ...t, completed: !t.completed } : t)),
+        prev.map((t) =>
+          t.id === id
+            ? { ...t, completed: newCompleted, streakCount: newStreak }
+            : t,
+        ),
       );
     } catch (error) {
       console.log("Gagal toggle task:", error);
@@ -206,6 +261,9 @@ export function TasksProvider({ children }) {
         priority: t.priority || "Sedang",
         deadline: t.deadlineDate || t.deadline || null,
         completed: t.completed || false,
+        recurring: t.recurring || "none",
+        attachment_url: t.attachmentUrl || null,
+        attachment_name: t.attachmentName || null,
       }));
 
       const { error } = await supabase.from("tasks").insert(payload);
