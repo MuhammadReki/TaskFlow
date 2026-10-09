@@ -1,130 +1,50 @@
-<div align="center">
+# Welcome to your Expo app 👋
 
-# 📱 TaskFlow
+This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
 
-### Organize Your Tasks. Boost Your Productivity. 🚀
+## Get started
 
-<<<<<<< HEAD
-![React Native](https://img.shields.io/badge/React%20Native-0.81-blue?logo=react)
-![Expo](https://img.shields.io/badge/Expo-SDK%2054-black?logo=expo)
-![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?logo=typescript)
-![License](https://img.shields.io/badge/License-MIT-green)
+1. Install dependencies
 
-</div>
+   ```bash
+   npm install
+   ```
 
----
+2. Start the app
 
-# 📖 About
+   ```bash
+   npx expo start
+   ```
 
-TaskFlow adalah aplikasi To-Do List berbasis **React Native** yang dirancang untuk membantu pengguna mengatur tugas sehari-hari agar lebih produktif.
+In the output, you'll find options to open the app in a
 
-Project ini dibuat sebagai media pembelajaran sekaligus portfolio Mobile App Development.
+- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
+- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
+- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
+- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
 
----
+You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
 
-# ✨ Features
+## Get a fresh project
 
-- ✅ Add Task
-- ✏️ Edit Task
-- 🗑 Delete Task
-- 📊 Statistics
-- 🔔 Reminder Notification
-- 🎨 Clean Modern UI
-- 📱 Responsive Design
+When you're ready, run:
 
-=======
-<img src="assets/images/banner.png" width="100%"/>
-
-![React Native](https://img.shields.io/badge/React%20Native-0.81-blue?logo=react)
-![Expo](https://img.shields.io/badge/Expo-SDK%2054-black?logo=expo)
-![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?logo=typescript)
-![License](https://img.shields.io/badge/License-MIT-green)
-
-</div>
-
----
-
-# 📖 About
-
-TaskFlow adalah aplikasi To-Do List berbasis **React Native** yang dirancang untuk membantu pengguna mengatur tugas sehari-hari agar lebih produktif.
-
-Project ini dibuat sebagai media pembelajaran sekaligus portfolio Mobile App Development.
-
----
-
-# ✨ Features
-
-- ✅ Add Task
-- ✏️ Edit Task
-- 🗑 Delete Task
-- 📊 Statistics
-- 🔔 Reminder Notification
-- 🎨 Clean Modern UI
-- 📱 Responsive Design
-
->>>>>>> 91a985aa5866b40a941c44e91e09578f0eb61a2b
----
-
-# 📸 Screenshots
-
-<div align="center">
-
-<img src="assets/images/1.png" width="220"/>
-
-</div>
-
----
-
-# 🛠 Tech Stack
-
-<<<<<<< HEAD
-| Technology   | Description          |
-| ------------ | -------------------- |
-| React Native | Mobile Framework     |
-| Expo         | Development Platform |
-| Expo Router  | Navigation           |
-| TypeScript   | Programming Language |
-| AsyncStorage | Local Storage        |
-=======
-| Technology | Description |
-|------------|-------------|
-| React Native | Mobile Framework |
-| Expo | Development Platform |
-| Expo Router | Navigation |
-| TypeScript | Programming Language |
-| AsyncStorage | Local Storage |
->>>>>>> 91a985aa5866b40a941c44e91e09578f0eb61a2b
-
----
-
-# 📂 Folder Structure
-
-```text
-ToDoList/
-│
-├── app/
-│   ├── (tabs)/
-│   │   ├── index.tsx
-│   │   ├── statistik.tsx
-│   │   └── pengaturan.tsx
-│   ├── tambah-tugas.tsx
-│   ├── notifikasi-settings.tsx
-│   ├── bantuan-faq.tsx
-│   ├── welcome.tsx
-│   └── _layout.tsx
-├── assets/
-│   └── images/
-│       ├── icon.png
-│       ├── splash-icon.png
-│       └── 1.png
-├── components/
-├── context/
-├── hooks/
-├── utils/
-├── app.json
-├── package.json
-└── README.md
-<<<<<<< HEAD
+```bash
+npm run reset-project
 ```
-=======
->>>>>>> 91a985aa5866b40a941c44e91e09578f0eb61a2b
+
+This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+
+## Learn more
+
+To learn more about developing your project with Expo, look at the following resources:
+
+- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
+- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+
+## Join the community
+
+Join our community of developers creating universal apps.
+
+- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
+- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.

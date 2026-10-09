@@ -1,132 +1,173 @@
-import { useTasks } from '@/context/TasksContext';
-import { Ionicons } from '@expo/vector-icons';
-import * as DocumentPicker from 'expo-document-picker';
-import * as FileSystem from 'expo-file-system';
-import { router } from 'expo-router';
-import * as Sharing from 'expo-sharing';
-import React, { useState } from 'react';
+import { useTasks } from "@/context/TasksContext";
+import { useTheme } from "@/context/ThemeContext";
+import { hapticLight, hapticSelection, hapticWarning } from "@/lib/haptics";
+import { Ionicons } from "@expo/vector-icons";
+import * as DocumentPicker from "expo-document-picker";
+import * as FileSystem from "expo-file-system";
+import { router } from "expo-router";
+import * as Sharing from "expo-sharing";
+import React from "react";
 import {
   Alert,
   ScrollView,
   StyleSheet,
+  Switch,
   Text,
   TouchableOpacity,
-  View
-} from 'react-native';
+  View,
+} from "react-native";
 
-// ================== WARNA ==================
-const GREEN_DARK = '#1B6B3A';
-const GREEN = '#2E9E4F';
-const GREEN_BG = '#EAF6EC';
-const BLUE_BG = '#E8F0FE';
-const BLUE = '#3B82F6';
-const PURPLE_BG = '#F0EAFB';
-const PURPLE = '#8B5CF6';
-const RED = '#D9534F';
-const RED_BG = '#FCE8E8';
-const ORANGE_BG = '#FDF3E0';
-const ORANGE = '#E8A83E';
-const CYAN_BG = '#E5F7F8';
-const CYAN = '#17A2B8';
-const BG = '#F6FAF7';
-const GRAY_TEXT = '#9CA3AF';
+// ================== WARNA (buat icon aja) ==================
+const GREEN_DARK = "#1B6B3A";
+const GREEN_BG = "#EAF6EC";
+const BLUE_BG = "#E8F0FE";
+const BLUE = "#3B82F6";
+const PURPLE_BG = "#F0EAFB";
+const PURPLE = "#8B5CF6";
+const RED = "#D9534F";
+const RED_BG = "#FCE8E8";
+const ORANGE_BG = "#FDF3E0";
+const ORANGE = "#E8A83E";
+const CYAN_BG = "#E5F7F8";
+const CYAN = "#17A2B8";
 
 export default function PengaturanScreen() {
   const { tasks, replaceAllTasks, resetAllTasks } = useTasks();
-  const [darkMode, setDarkMode] = useState(false);
+  const { isDark, colors, toggleTheme } = useTheme();
 
   // ================== BACKUP DATA KE FILE JSON ==================
   const handleBackup = async () => {
+    hapticLight();
     try {
       const json = JSON.stringify(tasks, null, 2);
-      const fileUri = FileSystem.documentDirectory + 'taskflow-backup.json';
-      await FileSystem.writeAsStringAsync(fileUri, json, {
-        encoding: FileSystem.EncodingType.UTF8,
-      });
+      const file = new FileSystem.File(
+        FileSystem.Paths.document,
+        "taskflow-backup.json",
+      );
+      await file.write(json);
 
       const canShare = await Sharing.isAvailableAsync();
       if (canShare) {
-        await Sharing.shareAsync(fileUri, {
-          mimeType: 'application/json',
-          dialogTitle: 'Simpan Backup TaskFlow',
+        await Sharing.shareAsync(file.uri, {
+          mimeType: "application/json",
+          dialogTitle: "Simpan Backup TaskFlow",
         });
       } else {
-        Alert.alert('Backup berhasil', `File tersimpan di:\n${fileUri}`);
+        Alert.alert("Backup berhasil", `File tersimpan di:\n${file.uri}`);
       }
-    } catch (error) {
-      Alert.alert('Gagal backup', error.message);
+    } catch (error: any) {
+      Alert.alert("Gagal backup", error.message);
     }
   };
 
   // ================== RESTORE DATA DARI FILE JSON ==================
   const handleRestore = async () => {
+    hapticLight();
     try {
       const result = await DocumentPicker.getDocumentAsync({
-        type: 'application/json',
+        type: "application/json",
         copyToCacheDirectory: true,
       });
 
       if (result.canceled) return;
 
       const fileUri = result.assets[0].uri;
-      const content = await FileSystem.readAsStringAsync(fileUri);
+      const file = new FileSystem.File(fileUri);
+      const content = await file.text();
       const parsed = JSON.parse(content);
 
       if (!Array.isArray(parsed)) {
-        Alert.alert('File tidak valid', 'Format file JSON tidak sesuai.');
+        Alert.alert("File tidak valid", "Format file JSON tidak sesuai.");
         return;
       }
 
       Alert.alert(
-        'Restore Data',
+        "Restore Data",
         `Ditemukan ${parsed.length} tugas di file ini. Data yang ada sekarang akan diganti. Lanjutkan?`,
         [
-          { text: 'Batal', style: 'cancel' },
+          { text: "Batal", style: "cancel" },
           {
-            text: 'Restore',
+            text: "Restore",
             onPress: () => {
               replaceAllTasks(parsed);
-              Alert.alert('Berhasil', 'Data berhasil dipulihkan.');
+              Alert.alert("Berhasil", "Data berhasil dipulihkan.");
             },
           },
-        ]
+        ],
       );
-    } catch (error) {
-      Alert.alert('Gagal restore', error.message);
+    } catch (error: any) {
+      Alert.alert("Gagal restore", error.message);
     }
   };
 
   // ================== RESET SEMUA DATA ==================
   const handleReset = () => {
+    hapticWarning();
     Alert.alert(
-      'Reset Semua Data',
-      'Semua tugas dan pengaturan akan dihapus permanen. Tindakan ini tidak bisa dibatalkan. Lanjutkan?',
+      "Reset Semua Data",
+      "Semua tugas dan pengaturan akan dihapus permanen. Tindakan ini tidak bisa dibatalkan. Lanjutkan?",
       [
-        { text: 'Batal', style: 'cancel' },
+        { text: "Batal", style: "cancel" },
         {
-          text: 'Hapus Semua',
-          style: 'destructive',
+          text: "Hapus Semua",
+          style: "destructive",
           onPress: () => {
             resetAllTasks();
-            Alert.alert('Selesai', 'Semua data sudah dihapus.');
+            Alert.alert("Selesai", "Semua data sudah dihapus.");
           },
         },
-      ]
+      ],
     );
   };
 
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+    <ScrollView
+      style={[styles.container, { backgroundColor: colors.bg }]}
+      showsVerticalScrollIndicator={false}
+    >
       {/* ================= HEADER ================= */}
-      <Text style={styles.title}>Pengaturan</Text>
-      <Text style={styles.subtitle}>
+      <Text style={[styles.title, { color: colors.text }]}>Pengaturan</Text>
+      <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
         Kelola preferensi dan data aplikasi Anda
       </Text>
 
+      {/* ================= TAMPILAN ================= */}
+      <SectionLabel text="TAMPILAN" colors={colors} />
+      <View
+        style={[
+          styles.card,
+          { backgroundColor: colors.card, shadowOpacity: colors.shadowOpacity },
+        ]}
+      >
+        <SettingRow
+          icon={isDark ? "moon" : "sunny-outline"}
+          iconBg={colors.primaryBg}
+          iconColor={colors.primary}
+          title="Dark Mode"
+          subtitle={isDark ? "Aktif" : "Nonaktif"}
+          colors={colors}
+          right={
+            <Switch
+              value={isDark}
+              onValueChange={() => {
+                hapticSelection();
+                toggleTheme();
+              }}
+              trackColor={{ false: colors.border, true: colors.primaryLight }}
+              thumbColor="#fff"
+            />
+          }
+        />
+      </View>
 
       {/* ================= DATA & BACKUP ================= */}
-      <SectionLabel text="DATA & BACKUP" />
-      <View style={styles.card}>
+      <SectionLabel text="DATA & BACKUP" colors={colors} />
+      <View
+        style={[
+          styles.card,
+          { backgroundColor: colors.card, shadowOpacity: colors.shadowOpacity },
+        ]}
+      >
         <SettingRow
           icon="briefcase-outline"
           iconBg={GREEN_BG}
@@ -135,8 +176,9 @@ export default function PengaturanScreen() {
           subtitle="Simpan data tugas ke file JSON"
           onPress={handleBackup}
           showArrow
+          colors={colors}
         />
-        <Divider />
+        <Divider colors={colors} />
         <SettingRow
           icon="arrow-down-outline"
           iconBg={BLUE_BG}
@@ -145,27 +187,35 @@ export default function PengaturanScreen() {
           subtitle="Pulihkan data dari file JSON"
           onPress={handleRestore}
           showArrow
+          colors={colors}
         />
-        <Divider />
+        <Divider colors={colors} />
         <SettingRow
           icon="information-circle-outline"
           iconBg={PURPLE_BG}
           iconColor={PURPLE}
           title="Tentang Backup"
           subtitle="Pelajari cara backup dan restore data"
-          onPress={() =>
+          onPress={() => {
+            hapticLight();
             Alert.alert(
-              'Tentang Backup',
-              'Backup akan menyimpan seluruh data tugas kamu ke file JSON yang bisa disimpan di HP atau cloud storage. File ini bisa dipakai lagi lewat menu Restore Data kalau suatu saat kamu ganti HP atau install ulang aplikasi.'
-            )
-          }
+              "Tentang Backup",
+              "Backup akan menyimpan seluruh data tugas kamu ke file JSON yang bisa disimpan di HP atau cloud storage. File ini bisa dipakai lagi lewat menu Restore Data kalau suatu saat kamu ganti HP atau install ulang aplikasi.",
+            );
+          }}
           showArrow
+          colors={colors}
         />
       </View>
 
       {/* ================= KEAMANAN & DATA ================= */}
-      <SectionLabel text="KEAMANAN & DATA" />
-      <View style={styles.card}>
+      <SectionLabel text="KEAMANAN & DATA" colors={colors} />
+      <View
+        style={[
+          styles.card,
+          { backgroundColor: colors.card, shadowOpacity: colors.shadowOpacity },
+        ]}
+      >
         <SettingRow
           icon="trash-outline"
           iconBg={RED_BG}
@@ -175,41 +225,60 @@ export default function PengaturanScreen() {
           onPress={handleReset}
           showArrow
           danger
+          colors={colors}
         />
       </View>
 
       {/* ================= LAINNYA ================= */}
-      <SectionLabel text="LAINNYA" />
-      <View style={styles.card}>
+      <SectionLabel text="LAINNYA" colors={colors} />
+      <View
+        style={[
+          styles.card,
+          { backgroundColor: colors.card, shadowOpacity: colors.shadowOpacity },
+        ]}
+      >
         <SettingRow
           icon="notifications-outline"
           iconBg={ORANGE_BG}
           iconColor={ORANGE}
           title="Notifikasi"
           subtitle="Kelola notifikasi pengingat tugas"
-          onPress={() => router.push('/notifikasi-settings')}
+          onPress={() => {
+            hapticLight();
+            router.push("/notifikasi-settings");
+          }}
           showArrow
+          colors={colors}
         />
-        <Divider />
+        <Divider colors={colors} />
         <SettingRow
           icon="help-circle-outline"
           iconBg={CYAN_BG}
           iconColor={CYAN}
           title="Bantuan & FAQ"
           subtitle="Temukan jawaban dan panduan penggunaan"
-          onPress={() => router.push('/bantuan-faq')}
+          onPress={() => {
+            hapticLight();
+            router.push("/bantuan-faq");
+          }}
           showArrow
+          colors={colors}
         />
       </View>
 
-      {/* ================= BANNER OFFLINE ================= */}
-      <View style={styles.offlineBanner}>
-        <Ionicons name="shield-checkmark" size={22} color={GREEN_DARK} />
+      {/* ================= BANNER ONLINE ================= */}
+      <View
+        style={[styles.onlineBanner, { backgroundColor: colors.primaryBg }]}
+      >
+        <Ionicons name="cloud-done" size={22} color={colors.primary} />
         <View style={{ flex: 1, marginLeft: 12 }}>
-          <Text style={styles.offlineTitle}>TaskFlow 100% Offline</Text>
-          <Text style={styles.offlineSubtitle}>
-            Semua data tersimpan di perangkat Anda. Tidak ada data yang
-            dikirim ke server.
+          <Text style={[styles.onlineTitle, { color: colors.primary }]}>
+            TaskFlow Online
+          </Text>
+          <Text
+            style={[styles.onlineSubtitle, { color: colors.textSecondary }]}
+          >
+            Data tersimpan di cloud (Supabase). Bisa diakses dari mana aja.
           </Text>
         </View>
       </View>
@@ -221,12 +290,18 @@ export default function PengaturanScreen() {
 
 // ================== KOMPONEN KECIL ==================
 
-function SectionLabel({ text }) {
-  return <Text style={styles.sectionLabel}>{text}</Text>;
+function SectionLabel({ text, colors }: { text: string; colors: any }) {
+  return (
+    <Text style={[styles.sectionLabel, { color: colors.textMuted }]}>
+      {text}
+    </Text>
+  );
 }
 
-function Divider() {
-  return <View style={styles.divider} />;
+function Divider({ colors }: { colors: any }) {
+  return (
+    <View style={[styles.divider, { backgroundColor: colors.borderLight }]} />
+  );
 }
 
 function SettingRow({
@@ -239,6 +314,18 @@ function SettingRow({
   right,
   showArrow,
   danger,
+  colors,
+}: {
+  icon: any;
+  iconBg: string;
+  iconColor: string;
+  title: string;
+  subtitle: string;
+  onPress?: () => void;
+  right?: React.ReactNode;
+  showArrow?: boolean;
+  danger?: boolean;
+  colors: any;
 }) {
   const Wrapper = onPress ? TouchableOpacity : View;
   return (
@@ -247,17 +334,19 @@ function SettingRow({
         <Ionicons name={icon} size={20} color={iconColor} />
       </View>
       <View style={styles.rowTextWrap}>
-        <Text style={[styles.rowTitle, danger && { color: RED }]}>
+        <Text style={[styles.rowTitle, { color: danger ? RED : colors.text }]}>
           {title}
         </Text>
-        <Text style={styles.rowSubtitle}>{subtitle}</Text>
+        <Text style={[styles.rowSubtitle, { color: colors.textMuted }]}>
+          {subtitle}
+        </Text>
       </View>
       {right}
       {showArrow && (
         <Ionicons
           name="chevron-forward"
           size={18}
-          color={danger ? RED : GRAY_TEXT}
+          color={danger ? RED : colors.textMuted}
         />
       )}
     </Wrapper>
@@ -267,47 +356,41 @@ function SettingRow({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: BG,
     paddingHorizontal: 20,
     paddingTop: 37,
   },
 
   title: {
     fontSize: 26,
-    fontWeight: '800',
-    color: '#1A1A1A',
+    fontWeight: "800",
     marginTop: 16,
   },
   subtitle: {
     fontSize: 13,
-    color: '#6B7280',
     marginTop: 4,
     marginBottom: 8,
   },
 
   sectionLabel: {
     fontSize: 12,
-    fontWeight: '700',
-    color: '#9CA3AF',
+    fontWeight: "700",
     letterSpacing: 0.5,
     marginTop: 24,
     marginBottom: 10,
   },
 
   card: {
-    backgroundColor: '#fff',
     borderRadius: 16,
-    shadowColor: '#000',
-    shadowOpacity: 0.04,
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 3 },
     shadowRadius: 8,
     elevation: 1,
-    overflow: 'hidden',
+    overflow: "hidden",
   },
 
   row: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     paddingHorizontal: 16,
     paddingVertical: 14,
     gap: 12,
@@ -316,46 +399,39 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   rowTextWrap: {
     flex: 1,
   },
   rowTitle: {
     fontSize: 14,
-    fontWeight: '700',
-    color: '#1A1A1A',
+    fontWeight: "700",
   },
   rowSubtitle: {
     fontSize: 12,
-    color: '#9CA3AF',
     marginTop: 2,
   },
   divider: {
     height: 1,
-    backgroundColor: '#F3F4F6',
     marginLeft: 68,
   },
 
-  offlineBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: GREEN_BG,
+  onlineBanner: {
+    flexDirection: "row",
+    alignItems: "center",
     borderRadius: 16,
     padding: 16,
     marginTop: 28,
   },
-  offlineTitle: {
+  onlineTitle: {
     fontSize: 13,
-    fontWeight: '800',
-    color: GREEN_DARK,
+    fontWeight: "800",
   },
-  offlineSubtitle: {
+  onlineSubtitle: {
     fontSize: 11,
-    color: '#4B7A5A',
     marginTop: 2,
     lineHeight: 15,
   },
 });
-

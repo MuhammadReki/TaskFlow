@@ -40,9 +40,11 @@
       "reactCompiler": true
     },
     "extra": {
+      "router": {},
       "eas": {
-        "projectId": "fa46807d-e8b7-4502-b221-a0f81a97efc3"
+        "projectId": "9af4a378-9d49-46a1-a352-fdb982f7cce9"
       }
-    }
+    },
+    "owner": "mreki"
   }
 }

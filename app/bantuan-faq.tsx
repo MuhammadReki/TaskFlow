@@ -1,124 +1,181 @@
-import { Ionicons } from '@expo/vector-icons';
-import { router } from 'expo-router';
-import React, { useState } from 'react';
+import { useTheme } from "@/context/ThemeContext";
+import { hapticLight } from "@/lib/haptics";
+import { Ionicons } from "@expo/vector-icons";
+import { router } from "expo-router";
+import React, { useState } from "react";
 import {
-    Linking,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
-} from 'react-native';
+  Linking,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 
-// ================== WARNA ==================
-const GREEN_DARK = '#1B6B3A';
-const GREEN = '#2E9E4F';
-const GREEN_BG = '#EAF6EC';
-const BG = '#F6FAF7';
-const GRAY_BORDER = '#E5E7EB';
-const GRAY_TEXT = '#9CA3AF';
-
-// Isi FAQ — bebas kamu ubah/tambah sesuai kebutuhan app kamu
+// Isi FAQ
 const FAQ_ITEMS = [
   {
-    question: 'Apakah data saya aman kalau HP hilang?',
+    question: "Apakah data saya aman kalau HP hilang?",
     answer:
-      'Semua data TaskFlow tersimpan langsung di perangkat kamu, bukan di server. Karena itu, kami sangat menyarankan kamu rutin melakukan Backup Data (JSON) lewat menu Pengaturan supaya data bisa dipulihkan kalau ganti HP.',
+      "Aman! Data TaskFlow tersimpan di cloud (Supabase). Tinggal login dari HP baru, semua tugas langsung muncul lagi.",
   },
   {
-    question: 'Bagaimana cara backup data tugas saya?',
+    question: "Bagaimana cara backup data tugas saya?",
     answer:
-      'Buka Pengaturan → Data & Backup → Backup Data (JSON). File JSON berisi semua tugas kamu akan dibuat dan bisa langsung disimpan ke Google Drive, email, atau penyimpanan lain.',
+      "Buka Pengaturan → Data & Backup → Backup Data (JSON). File JSON berisi semua tugas kamu akan dibuat dan bisa langsung disimpan ke Google Drive, email, atau penyimpanan lain.",
   },
   {
-    question: 'Bagaimana cara memulihkan data dari backup?',
+    question: "Bagaimana cara memulihkan data dari backup?",
     answer:
-      'Buka Pengaturan → Data & Backup → Restore Data (JSON), lalu pilih file backup JSON yang sebelumnya kamu simpan. Data yang ada sekarang akan diganti dengan isi file backup.',
+      "Buka Pengaturan → Data & Backup → Restore Data (JSON), lalu pilih file backup JSON yang sebelumnya kamu simpan. Data yang ada sekarang akan diganti dengan isi file backup.",
   },
   {
-    question: 'Apakah TaskFlow butuh koneksi internet?',
+    question: "Apakah TaskFlow butuh koneksi internet?",
     answer:
-      'Tidak. TaskFlow dirancang 100% offline — semua fitur termasuk pengingat notifikasi berjalan langsung di perangkat kamu tanpa perlu internet.',
+      "Ya, TaskFlow butuh internet karena data disimpan di cloud (Supabase). Tapi kamu bisa akses dari device manapun setelah login.",
   },
   {
-    question: 'Bagaimana cara menghapus semua data sekaligus?',
+    question: "Bagaimana cara menghapus semua data sekaligus?",
     answer:
-      'Buka Pengaturan → Reset Semua Data. Perlu diingat, tindakan ini akan menghapus seluruh tugas secara permanen dan tidak bisa dibatalkan, jadi pastikan kamu sudah backup dulu kalau perlu.',
+      "Buka Pengaturan → Reset Semua Data. Perlu diingat, tindakan ini akan menghapus seluruh tugas secara permanen dan tidak bisa dibatalkan, jadi pastikan kamu sudah backup dulu kalau perlu.",
   },
   {
-    question: 'Kenapa notifikasi pengingat tidak muncul?',
+    question: "Kenapa notifikasi pengingat tidak muncul?",
     answer:
       'Pastikan toggle "Pengingat Tugas" di Pengaturan → Notifikasi sudah aktif, dan izin notifikasi untuk TaskFlow sudah diaktifkan di pengaturan sistem HP kamu.',
   },
 ];
 
 export default function BantuanFaqScreen() {
-  const [openIndex, setOpenIndex] = useState(null);
+  const { colors } = useTheme();
+  const [openIndex, setOpenIndex] = useState<number | null>(null);
 
-  const toggleItem = (index) => {
+  const toggleItem = (index: number) => {
     setOpenIndex(openIndex === index ? null : index);
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.card }]}>
       {/* ================= HEADER ================= */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()}>
-          <Ionicons name="chevron-back" size={24} color="#1A1A1A" />
+      <View style={[styles.header, { borderBottomColor: colors.border }]}>
+        <TouchableOpacity
+          onPress={() => {
+            hapticLight();
+            router.back();
+          }}
+        >
+          <Ionicons name="chevron-back" size={24} color={colors.text} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Bantuan & FAQ</Text>
+        <Text style={[styles.headerTitle, { color: colors.text }]}>
+          Bantuan & FAQ
+        </Text>
         <View style={{ width: 24 }} />
       </View>
 
       <ScrollView
-        style={styles.content}
+        style={[styles.content, { backgroundColor: colors.bg }]}
         showsVerticalScrollIndicator={false}
       >
-        <Text style={styles.description}>
+        <Text style={[styles.description, { color: colors.textSecondary }]}>
           Pertanyaan yang sering ditanyakan seputar TaskFlow.
         </Text>
 
-        <View style={styles.card}>
+        <View
+          style={[
+            styles.card,
+            {
+              backgroundColor: colors.card,
+              shadowOpacity: colors.shadowOpacity,
+            },
+          ]}
+        >
           {FAQ_ITEMS.map((item, index) => {
             const isOpen = openIndex === index;
             return (
               <View key={item.question}>
                 <TouchableOpacity
                   style={styles.faqQuestionRow}
-                  onPress={() => toggleItem(index)}
+                  onPress={() => {
+                    hapticLight();
+                    toggleItem(index);
+                  }}
                   activeOpacity={0.7}
                 >
-                  <Text style={styles.faqQuestionText}>{item.question}</Text>
+                  <Text
+                    style={[styles.faqQuestionText, { color: colors.text }]}
+                  >
+                    {item.question}
+                  </Text>
                   <Ionicons
-                    name={isOpen ? 'chevron-up' : 'chevron-down'}
+                    name={isOpen ? "chevron-up" : "chevron-down"}
                     size={18}
-                    color={GRAY_TEXT}
+                    color={colors.textMuted}
                   />
                 </TouchableOpacity>
                 {isOpen && (
-                  <Text style={styles.faqAnswerText}>{item.answer}</Text>
+                  <Text
+                    style={[
+                      styles.faqAnswerText,
+                      { color: colors.textSecondary },
+                    ]}
+                  >
+                    {item.answer}
+                  </Text>
                 )}
-                {index < FAQ_ITEMS.length - 1 && <View style={styles.divider} />}
+                {index < FAQ_ITEMS.length - 1 && (
+                  <View
+                    style={[
+                      styles.divider,
+                      { backgroundColor: colors.borderLight },
+                    ]}
+                  />
+                )}
               </View>
             );
           })}
         </View>
 
         {/* ================= KONTAK ================= */}
-        <Text style={styles.sectionLabel}>MASIH BUTUH BANTUAN?</Text>
-        <View style={styles.card}>
+        <Text style={[styles.sectionLabel, { color: colors.textMuted }]}>
+          MASIH BUTUH BANTUAN?
+        </Text>
+        <View
+          style={[
+            styles.card,
+            {
+              backgroundColor: colors.card,
+              shadowOpacity: colors.shadowOpacity,
+            },
+          ]}
+        >
           <TouchableOpacity
             style={styles.contactRow}
-            onPress={() => Linking.openURL('mailto:mreki2023@gmail.com')}
+            onPress={() => {
+              hapticLight();
+              Linking.openURL("mailto:mreki2023@gmail.com");
+            }}
           >
-            <View style={styles.contactIconBox}>
-              <Ionicons name="mail-outline" size={20} color={GREEN_DARK} />
+            <View
+              style={[
+                styles.contactIconBox,
+                { backgroundColor: colors.primaryBg },
+              ]}
+            >
+              <Ionicons name="mail-outline" size={20} color={colors.primary} />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={styles.rowTitle}>Hubungi Support</Text>
-              <Text style={styles.rowSubtitle}>mreki2023@gmail.com</Text>
+              <Text style={[styles.rowTitle, { color: colors.text }]}>
+                Hubungi Support
+              </Text>
+              <Text style={[styles.rowSubtitle, { color: colors.textMuted }]}>
+                mreki2023@gmail.com
+              </Text>
             </View>
-            <Ionicons name="chevron-forward" size={18} color={GRAY_TEXT} />
+            <Ionicons
+              name="chevron-forward"
+              size={18}
+              color={colors.textMuted}
+            />
           </TouchableOpacity>
         </View>
 
@@ -129,68 +186,53 @@ export default function BantuanFaqScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff' },
+  container: { flex: 1 },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     paddingHorizontal: 20,
     paddingTop: 70,
     paddingBottom: 14,
     borderBottomWidth: 1,
-    borderBottomColor: GRAY_BORDER,
   },
-  headerTitle: { fontSize: 16, fontWeight: '800', color: '#1A1A1A' },
-  content: { flex: 1, backgroundColor: BG, paddingHorizontal: 20 },
-  description: {
-    fontSize: 13,
-    color: '#6B7280',
-    marginTop: 16,
-    marginBottom: 20,
-  },
+  headerTitle: { fontSize: 16, fontWeight: "800" },
+  content: { flex: 1, paddingHorizontal: 20 },
+  description: { fontSize: 13, marginTop: 16, marginBottom: 20 },
   sectionLabel: {
     fontSize: 12,
-    fontWeight: '700',
-    color: '#9CA3AF',
+    fontWeight: "700",
     letterSpacing: 0.5,
     marginTop: 24,
     marginBottom: 10,
   },
   card: {
-    backgroundColor: '#fff',
     borderRadius: 16,
     paddingHorizontal: 16,
-    shadowColor: '#000',
-    shadowOpacity: 0.04,
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 3 },
     shadowRadius: 8,
     elevation: 1,
   },
   faqQuestionRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     paddingVertical: 16,
     gap: 12,
   },
-  faqQuestionText: {
-    flex: 1,
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#1A1A1A',
-  },
+  faqQuestionText: { flex: 1, fontSize: 14, fontWeight: "700" },
   faqAnswerText: {
     fontSize: 13,
-    color: '#374151', // Diubah dari #6B7280 ke #374151 untuk kontras lebih baik
-    lineHeight: 22, // Ditingkatkan dari 19 ke 22 untuk spasi antar baris lebih nyaman
+    lineHeight: 22,
     paddingBottom: 16,
-    textAlign: 'justify', // INI YANG PALING PENTING - rata kiri kanan
-    paddingHorizontal: 4, // Tambahan padding kecil agar lebih rapi
+    textAlign: "justify",
+    paddingHorizontal: 4,
   },
-  divider: { height: 1, backgroundColor: '#F3F4F6' },
+  divider: { height: 1 },
   contactRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     paddingVertical: 14,
     gap: 12,
   },
@@ -198,10 +240,9 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 12,
-    backgroundColor: GREEN_BG,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
-  rowTitle: { fontSize: 14, fontWeight: '700', color: '#1A1A1A' },
-  rowSubtitle: { fontSize: 12, color: '#9CA3AF', marginTop: 2 },
+  rowTitle: { fontSize: 14, fontWeight: "700" },
+  rowSubtitle: { fontSize: 12, marginTop: 2 },
 });

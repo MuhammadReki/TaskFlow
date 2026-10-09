@@ -1,39 +1,28 @@
 import { useTasks } from "@/context/TasksContext";
+import { useTheme } from "@/context/ThemeContext";
+import {
+  hapticError,
+  hapticHeavy,
+  hapticSelection,
+  hapticSuccess,
+  hapticWarning,
+} from "@/lib/haptics";
 import { Ionicons } from "@expo/vector-icons";
 import DateTimePicker from "@react-native-community/datetimepicker";
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import React, { useState } from "react";
 import {
+  Alert,
   Modal,
   Platform,
   ScrollView,
   StyleSheet,
-  Switch,
   Text,
   TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
 
-// ================== WARNA ==================
-const GREEN_DARK = "#1B6B3A";
-const GREEN = "#2E9E4F";
-const BG = "#F6FAF7";
-const RED = "#D9534F";
-const RED_BG = "#FCE8E8";
-const ORANGE = "#E8A83E";
-const ORANGE_BG = "#FDF3E0";
-const GREEN_BG = "#EAF6EC";
-const GRAY_BORDER = "#E5E7EB";
-const GRAY_TEXT = "#9CA3AF";
-
-const PRIORITIES = [
-  { key: "Tinggi", color: RED, bg: RED_BG },
-  { key: "Sedang", color: ORANGE, bg: ORANGE_BG },
-  { key: "Rendah", color: GREEN, bg: GREEN_BG },
-];
-
-// Kategori & waktu pengingat — bebas kamu sesuaikan/tambah sendiri
 const CATEGORIES = [
   "Kerja",
   "Pribadi",
@@ -42,15 +31,8 @@ const CATEGORIES = [
   "Kesehatan",
   "Lainnya",
 ];
-const REMINDER_OPTIONS = [
-  "5 menit sebelum",
-  "10 menit sebelum",
-  "30 menit sebelum",
-  "1 jam sebelum",
-  "1 hari sebelum",
-];
 
-const ICON_BY_CATEGORY = {
+const ICON_BY_CATEGORY: Record<string, string> = {
   Kerja: "briefcase-outline",
   Pribadi: "person-outline",
   Belajar: "book-outline",
@@ -59,37 +41,35 @@ const ICON_BY_CATEGORY = {
   Lainnya: "document-text-outline",
 };
 
-/**
- * TambahTugasScreen
- *
- * Kalau `taskId` dikasih (mode edit), form ini otomatis keisi data lama
- * dan tombol "Hapus Tugas" muncul. Kalau kosong (mode tambah baru),
- * tombol hapus disembunyikan.
- */
-export default function TambahTugasScreen({ taskId = null }) {
+export default function TambahTugasScreen() {
+  const params = useLocalSearchParams<{ id?: string }>();
+  const taskId = params.id || null;
+
   const { addTask, updateTask, deleteTask, getTaskById } = useTasks();
+  const { colors } = useTheme();
   const existingTask = taskId ? getTaskById(taskId) : null;
+  const isEditMode = !!existingTask;
 
   const [title, setTitle] = useState(existingTask?.title || "");
   const [description, setDescription] = useState(
     existingTask?.description || "",
   );
-  const [deadline, setDeadline] = useState(
+  const [deadline, setDeadline] = useState<Date | null>(
     existingTask?.deadlineDate ? new Date(existingTask.deadlineDate) : null,
   );
   const [showDatePicker, setShowDatePicker] = useState(false);
-  const [priority, setPriority] = useState(existingTask?.priority || null);
-  const [category, setCategory] = useState(existingTask?.category || null);
+  const [priority, setPriority] = useState(existingTask?.priority || "Sedang");
+  const [category, setCategory] = useState(existingTask?.category || "Lainnya");
   const [showCategoryModal, setShowCategoryModal] = useState(false);
-  const [reminderEnabled, setReminderEnabled] = useState(
-    existingTask?.reminderEnabled || false,
-  );
-  const [reminderTime, setReminderTime] = useState(
-    existingTask?.reminderTime || null,
-  );
-  const [showReminderModal, setShowReminderModal] = useState(false);
+  const [saving, setSaving] = useState(false);
 
-  const formatDate = (date) => {
+  const PRIORITIES = [
+    { key: "Tinggi", color: colors.danger, bg: colors.dangerBg },
+    { key: "Sedang", color: colors.warning, bg: colors.warningBg },
+    { key: "Rendah", color: colors.primary, bg: colors.primaryBg },
+  ];
+
+  const formatDate = (date: Date | null) => {
     if (!date) return null;
     return date.toLocaleDateString("id-ID", {
       day: "numeric",
@@ -98,106 +78,173 @@ export default function TambahTugasScreen({ taskId = null }) {
     });
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!title.trim()) {
-      alert("Judul tugas belum diisi bro, isi dulu ya.");
+      hapticError();
+      Alert.alert("Error", "Judul tugas belum diisi bro!");
       return;
     }
 
-    const payload = {
-      title: title.trim(),
-      description,
-      deadlineDate: deadline ? deadline.toISOString() : null,
-      date: deadline ? formatDate(deadline) : "",
-      dateLabel: getDateLabel(deadline),
-      priority,
-      category,
-      icon: category ? ICON_BY_CATEGORY[category] : "document-text-outline",
-      reminderEnabled,
-      reminderTime,
-    };
+    setSaving(true);
+    try {
+      const payload = {
+        title: title.trim(),
+        description,
+        deadlineDate: deadline ? deadline.toISOString() : null,
+        priority,
+        category,
+        icon: ICON_BY_CATEGORY[category] || "document-text-outline",
+      };
 
-    if (existingTask) {
-      updateTask(existingTask.id, payload);
-    } else {
-      addTask(payload); // <-- INI OTOMATIS JADWAL NOTIFIKASI
+      if (isEditMode && existingTask) {
+        await updateTask(existingTask.id, payload);
+        hapticSuccess();
+        Alert.alert("Berhasil", "Tugas berhasil diupdate!");
+      } else {
+        await addTask(payload);
+        hapticSuccess();
+        Alert.alert("Berhasil", "Tugas berhasil ditambahkan!");
+      }
+
+      router.back();
+    } catch (error: any) {
+      hapticError();
+      Alert.alert("Gagal", error.message || "Terjadi kesalahan");
+    } finally {
+      setSaving(false);
     }
-
-    router.back();
   };
 
   const handleDelete = () => {
-    if (existingTask) {
-      deleteTask(existingTask.id);
-    }
-    router.back();
+    if (!existingTask) return;
+
+    hapticWarning();
+    Alert.alert(
+      "Hapus Tugas",
+      `Yakin mau hapus "${existingTask.title}"? Tindakan ini gak bisa dibatalin.`,
+      [
+        { text: "Batal", style: "cancel" },
+        {
+          text: "Hapus",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              hapticHeavy();
+              await deleteTask(existingTask.id);
+              router.back();
+            } catch (error: any) {
+              hapticError();
+              Alert.alert("Gagal", error.message);
+            }
+          },
+        },
+      ],
+    );
   };
 
   return (
-    <View style={styles.container}>
-      {/* ================= HEADER ================= */}
-      <View style={styles.header}>
+    <View style={[styles.container, { backgroundColor: colors.card }]}>
+      <View style={[styles.header, { borderBottomColor: colors.border }]}>
         <TouchableOpacity onPress={() => router.back()}>
-          <Text style={styles.headerCancel}>Batal</Text>
+          <Text style={[styles.headerCancel, { color: colors.primary }]}>
+            Batal
+          </Text>
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>
-          {existingTask ? "Edit Tugas" : "Tambah Tugas Baru"}
+        <Text style={[styles.headerTitle, { color: colors.text }]}>
+          {isEditMode ? "Edit Tugas" : "Tambah Tugas"}
         </Text>
-        <TouchableOpacity onPress={handleSave}>
-          <Text style={styles.headerSave}>Simpan</Text>
+        <TouchableOpacity onPress={handleSave} disabled={saving}>
+          <Text
+            style={[
+              styles.headerSave,
+              { color: colors.primary },
+              saving && { opacity: 0.5 },
+            ]}
+          >
+            {saving ? "..." : "Simpan"}
+          </Text>
         </TouchableOpacity>
       </View>
 
       <ScrollView
-        style={styles.form}
+        style={[styles.form, { backgroundColor: colors.bg }]}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
-        {/* ================= JUDUL ================= */}
-        <Text style={styles.label}>Judul Tugas</Text>
-        <View style={styles.inputRow}>
-          <Ionicons name="create-outline" size={18} color={GREEN} />
+        <Text style={[styles.label, { color: colors.text }]}>Judul Tugas</Text>
+        <View
+          style={[
+            styles.inputRow,
+            { backgroundColor: colors.card, borderColor: colors.border },
+          ]}
+        >
+          <Ionicons name="create-outline" size={18} color={colors.primary} />
           <TextInput
-            style={styles.input}
+            style={[styles.input, { color: colors.text }]}
             placeholder="Masukkan judul tugas"
-            placeholderTextColor={GRAY_TEXT}
+            placeholderTextColor={colors.textMuted}
             value={title}
             onChangeText={setTitle}
           />
         </View>
 
-        {/* ================= DESKRIPSI ================= */}
-        <Text style={styles.label}>Deskripsi</Text>
-        <View style={styles.textareaRow}>
+        <Text style={[styles.label, { color: colors.text }]}>Deskripsi</Text>
+        <View
+          style={[
+            styles.textareaRow,
+            { backgroundColor: colors.card, borderColor: colors.border },
+          ]}
+        >
           <Ionicons
             name="reader-outline"
             size={18}
-            color="#9CA3AF"
+            color={colors.textMuted}
             style={{ marginTop: 2 }}
           />
           <TextInput
-            style={styles.textarea}
+            style={[styles.textarea, { color: colors.text }]}
             placeholder="Tambahkan catatan atau detail tugas"
-            placeholderTextColor={GRAY_TEXT}
+            placeholderTextColor={colors.textMuted}
             value={description}
             onChangeText={(text) => setDescription(text.slice(0, 500))}
             multiline
             maxLength={500}
           />
         </View>
-        <Text style={styles.charCount}>{description.length}/500</Text>
+        <Text style={[styles.charCount, { color: colors.textMuted }]}>
+          {description.length}/500
+        </Text>
 
-        {/* ================= DEADLINE ================= */}
-        <Text style={styles.label}>Deadline</Text>
+        <Text style={[styles.label, { color: colors.text }]}>Deadline</Text>
         <TouchableOpacity
-          style={styles.inputRow}
-          onPress={() => setShowDatePicker(true)}
+          style={[
+            styles.inputRow,
+            { backgroundColor: colors.card, borderColor: colors.border },
+          ]}
+          onPress={() => {
+            hapticSelection();
+            setShowDatePicker(true);
+          }}
         >
-          <Ionicons name="calendar-outline" size={18} color={GREEN} />
-          <Text style={[styles.inputText, !deadline && { color: GRAY_TEXT }]}>
+          <Ionicons name="calendar-outline" size={18} color={colors.primary} />
+          <Text
+            style={[
+              styles.inputText,
+              { color: deadline ? colors.text : colors.textMuted },
+            ]}
+          >
             {deadline ? formatDate(deadline) : "Pilih tanggal deadline"}
           </Text>
-          <Ionicons name="chevron-forward" size={18} color={GRAY_TEXT} />
+          {deadline && (
+            <TouchableOpacity onPress={() => setDeadline(null)}>
+              <Ionicons
+                name="close-circle"
+                size={18}
+                color={colors.textMuted}
+              />
+            </TouchableOpacity>
+          )}
+          <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
         </TouchableOpacity>
 
         {showDatePicker && (
@@ -212,8 +259,7 @@ export default function TambahTugasScreen({ taskId = null }) {
           />
         )}
 
-        {/* ================= PRIORITAS ================= */}
-        <Text style={styles.label}>Prioritas</Text>
+        <Text style={[styles.label, { color: colors.text }]}>Prioritas</Text>
         <View style={styles.priorityRow}>
           {PRIORITIES.map((p) => {
             const active = priority === p.key;
@@ -225,7 +271,10 @@ export default function TambahTugasScreen({ taskId = null }) {
                   { backgroundColor: p.bg },
                   active && { borderWidth: 2, borderColor: p.color },
                 ]}
-                onPress={() => setPriority(p.key)}
+                onPress={() => {
+                  hapticSelection();
+                  setPriority(p.key);
+                }}
               >
                 <Ionicons name="flag" size={14} color={p.color} />
                 <Text style={[styles.priorityText, { color: p.color }]}>
@@ -236,120 +285,84 @@ export default function TambahTugasScreen({ taskId = null }) {
           })}
         </View>
 
-        {/* ================= KATEGORI ================= */}
-        <Text style={styles.label}>Kategori</Text>
+        <Text style={[styles.label, { color: colors.text }]}>Kategori</Text>
         <TouchableOpacity
-          style={styles.inputRow}
-          onPress={() => setShowCategoryModal(true)}
+          style={[
+            styles.inputRow,
+            { backgroundColor: colors.card, borderColor: colors.border },
+          ]}
+          onPress={() => {
+            hapticSelection();
+            setShowCategoryModal(true);
+          }}
         >
-          <Ionicons name="folder-outline" size={18} color={GREEN} />
-          <Text style={[styles.inputText, !category && { color: GRAY_TEXT }]}>
+          <Ionicons name="folder-outline" size={18} color={colors.primary} />
+          <Text style={[styles.inputText, { color: colors.text }]}>
             {category || "Pilih kategori"}
           </Text>
-          <Ionicons name="chevron-down" size={18} color={GRAY_TEXT} />
+          <Ionicons name="chevron-down" size={18} color={colors.textMuted} />
         </TouchableOpacity>
 
-        {/* ================= PENGINGAT ================= */}
-        <Text style={styles.label}>Pengingat</Text>
-        <View style={styles.reminderToggleRow}>
-          <Ionicons name="notifications-outline" size={18} color="#374151" />
-          <Text style={styles.reminderToggleText}>
-            Aktifkan pengingat untuk tugas ini
-          </Text>
-          <Switch
-            value={reminderEnabled}
-            onValueChange={setReminderEnabled}
-            trackColor={{ false: "#E5E7EB", true: GREEN }}
-            thumbColor="#fff"
-          />
-        </View>
-
-        {/* ================= WAKTU PENGINGAT ================= */}
-        <Text style={styles.label}>Waktu Pengingat</Text>
-        <Text style={styles.helperText}>
-          Pilih waktu sebelum deadline untuk menerima notifikasi
-        </Text>
         <TouchableOpacity
-          style={[styles.inputRow, !reminderEnabled && styles.inputRowDisabled]}
-          disabled={!reminderEnabled}
-          onPress={() => setShowReminderModal(true)}
+          style={[styles.saveButton, { backgroundColor: colors.primary }]}
+          onPress={handleSave}
+          disabled={saving}
         >
-          <Ionicons
-            name="time-outline"
-            size={18}
-            color={reminderEnabled ? GREEN : GRAY_TEXT}
-          />
-          <Text
-            style={[
-              styles.inputText,
-              (!reminderEnabled || !reminderTime) && { color: GRAY_TEXT },
-            ]}
-          >
-            {reminderTime || "Pilih waktu pengingat"}
-          </Text>
-          <Ionicons name="chevron-down" size={18} color={GRAY_TEXT} />
-        </TouchableOpacity>
-
-        {/* ================= TOMBOL ================= */}
-        <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
           <Ionicons name="save-outline" size={18} color="#fff" />
-          <Text style={styles.saveButtonText}>Simpan Tugas</Text>
+          <Text style={styles.saveButtonText}>
+            {saving ? "Menyimpan..." : "Simpan Tugas"}
+          </Text>
         </TouchableOpacity>
 
-        {existingTask && (
-          <TouchableOpacity style={styles.deleteButton} onPress={handleDelete}>
-            <Ionicons name="trash-outline" size={18} color={RED} />
-            <Text style={styles.deleteButtonText}>Hapus Tugas</Text>
+        {isEditMode && (
+          <TouchableOpacity
+            style={[
+              styles.deleteButton,
+              { backgroundColor: colors.card, borderColor: colors.danger },
+            ]}
+            onPress={handleDelete}
+          >
+            <Ionicons name="trash-outline" size={18} color={colors.danger} />
+            <Text style={[styles.deleteButtonText, { color: colors.danger }]}>
+              Hapus Tugas
+            </Text>
           </TouchableOpacity>
         )}
 
         <View style={{ height: 40 }} />
       </ScrollView>
 
-      {/* ================= MODAL KATEGORI ================= */}
       <PickerModal
         visible={showCategoryModal}
         title="Pilih Kategori"
         options={CATEGORIES}
         onSelect={(value) => {
+          hapticSelection();
           setCategory(value);
           setShowCategoryModal(false);
         }}
         onClose={() => setShowCategoryModal(false)}
-      />
-
-      {/* ================= MODAL WAKTU PENGINGAT ================= */}
-      <PickerModal
-        visible={showReminderModal}
-        title="Pilih Waktu Pengingat"
-        options={REMINDER_OPTIONS}
-        onSelect={(value) => {
-          setReminderTime(value);
-          setShowReminderModal(false);
-        }}
-        onClose={() => setShowReminderModal(false)}
+        colors={colors}
       />
     </View>
   );
 }
 
-// Helper: nentuin label "Hari ini" / "Besok" / nama hari, dipakai HomeScreen buat filter
-function getDateLabel(date) {
-  if (!date) return "";
-  const today = new Date();
-  const target = new Date(date);
-  today.setHours(0, 0, 0, 0);
-  target.setHours(0, 0, 0, 0);
-
-  const diffDays = Math.round((target - today) / (1000 * 60 * 60 * 24));
-
-  if (diffDays === 0) return "Hari ini";
-  if (diffDays === 1) return "Besok";
-  return target.toLocaleDateString("id-ID", { weekday: "long" });
-}
-
-// ================== MODAL PICKER SEDERHANA ==================
-function PickerModal({ visible, title, options, onSelect, onClose }) {
+function PickerModal({
+  visible,
+  title,
+  options,
+  onSelect,
+  onClose,
+  colors,
+}: {
+  visible: boolean;
+  title: string;
+  options: string[];
+  onSelect: (value: string) => void;
+  onClose: () => void;
+  colors: any;
+}) {
   return (
     <Modal visible={visible} transparent animationType="slide">
       <TouchableOpacity
@@ -357,19 +370,28 @@ function PickerModal({ visible, title, options, onSelect, onClose }) {
         activeOpacity={1}
         onPress={onClose}
       >
-        <View style={styles.modalSheet}>
-          <Text style={styles.modalTitle}>{title}</Text>
+        <View style={[styles.modalSheet, { backgroundColor: colors.card }]}>
+          <Text style={[styles.modalTitle, { color: colors.text }]}>
+            {title}
+          </Text>
           {options.map((option) => (
             <TouchableOpacity
               key={option}
-              style={styles.modalOption}
+              style={[
+                styles.modalOption,
+                { borderBottomColor: colors.borderLight },
+              ]}
               onPress={() => onSelect(option)}
             >
-              <Text style={styles.modalOptionText}>{option}</Text>
+              <Text style={[styles.modalOptionText, { color: colors.text }]}>
+                {option}
+              </Text>
             </TouchableOpacity>
           ))}
           <TouchableOpacity style={styles.modalCancel} onPress={onClose}>
-            <Text style={styles.modalCancelText}>Batal</Text>
+            <Text style={[styles.modalCancelText, { color: colors.danger }]}>
+              Batal
+            </Text>
           </TouchableOpacity>
         </View>
       </TouchableOpacity>
@@ -378,88 +400,35 @@ function PickerModal({ visible, title, options, onSelect, onClose }) {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#fff",
-  },
-
+  container: { flex: 1 },
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     paddingHorizontal: 20,
-    paddingTop: 20,
-    borderBottomColor: GRAY_BORDER,
+    paddingTop: 60,
+    paddingBottom: 14,
+    borderBottomWidth: 1,
   },
-  headerCancel: {
-    fontSize: 16,
-    color: GREEN,
-    fontWeight: "600",
-    paddingVertical: 40, // DITAMBAHKAN
-  },
-  headerTitle: {
-    fontSize: 14.5,
-    fontWeight: "700",
-    color: "#1A1A1A",
-  },
-  headerSave: {
-    fontSize: 14,
-    color: GREEN,
-    fontWeight: "700",
-    paddingVertical: 40, // DITAMBAHKAN
-  },
-  form: {
-    flex: 1,
-    backgroundColor: BG,
-    paddingHorizontal: 20,
-  },
-
-  label: {
-    fontSize: 14,
-    fontWeight: "700",
-    color: "#1A1A1A",
-    marginTop: 16,
-    marginBottom: 6,
-  },
-  helperText: {
-    fontSize: 12,
-    color: GRAY_TEXT,
-    marginBottom: 8,
-    marginTop: -4,
-  },
-
+  headerCancel: { fontSize: 15, fontWeight: "600" },
+  headerTitle: { fontSize: 15, fontWeight: "700" },
+  headerSave: { fontSize: 15, fontWeight: "700" },
+  form: { flex: 1, paddingHorizontal: 20 },
+  label: { fontSize: 14, fontWeight: "700", marginTop: 16, marginBottom: 6 },
   inputRow: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#fff",
     borderWidth: 1.5,
-    borderColor: GRAY_BORDER,
     borderRadius: 12,
     paddingHorizontal: 14,
     paddingVertical: 14,
     gap: 10,
   },
-  inputRowDisabled: {
-    backgroundColor: "#F3F4F6",
-    opacity: 0.6,
-  },
-  inputText: {
-    flex: 1,
-    fontSize: 14,
-    color: "#1A1A1A",
-  },
-  input: {
-    flex: 1,
-    fontSize: 14,
-    color: "#1A1A1A",
-    padding: 0,
-  },
-
+  inputText: { flex: 1, fontSize: 14 },
+  input: { flex: 1, fontSize: 14, padding: 0 },
   textareaRow: {
     flexDirection: "row",
-    backgroundColor: "#fff",
     borderWidth: 1,
-    borderColor: GRAY_BORDER,
     borderRadius: 12,
     paddingHorizontal: 14,
     paddingVertical: 14,
@@ -468,22 +437,12 @@ const styles = StyleSheet.create({
   textarea: {
     flex: 1,
     fontSize: 14,
-    color: "#1A1A1A",
     minHeight: 90,
     textAlignVertical: "top",
     padding: 0,
   },
-  charCount: {
-    fontSize: 11,
-    color: GRAY_TEXT,
-    textAlign: "right",
-    marginTop: 4,
-  },
-
-  priorityRow: {
-    flexDirection: "row",
-    gap: 10,
-  },
+  charCount: { fontSize: 11, textAlign: "right", marginTop: 4 },
+  priorityRow: { flexDirection: "row", gap: 10 },
   priorityChip: {
     flex: 1,
     flexDirection: "row",
@@ -493,98 +452,42 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     gap: 6,
   },
-  priorityText: {
-    fontSize: 13,
-    fontWeight: "700",
-  },
-
-  reminderToggleRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#fff",
-    borderWidth: 1,
-    borderColor: GRAY_BORDER,
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 14,
-    gap: 10,
-  },
-  reminderToggleText: {
-    flex: 1,
-    fontSize: 13,
-    color: "#374151",
-  },
-
+  priorityText: { fontSize: 13, fontWeight: "700" },
   saveButton: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: GREEN_DARK,
     borderRadius: 14,
     paddingVertical: 16,
     marginTop: 28,
     gap: 8,
   },
-  saveButtonText: {
-    fontSize: 15,
-    fontWeight: "700",
-    color: "#fff",
-  },
-
+  saveButtonText: { fontSize: 15, fontWeight: "700", color: "#fff" },
   deleteButton: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#fff",
     borderWidth: 1.5,
-    borderColor: RED,
     borderRadius: 14,
     paddingVertical: 16,
     marginTop: 12,
     gap: 8,
   },
-  deleteButtonText: {
-    fontSize: 15,
-    fontWeight: "700",
-    color: RED,
-  },
-
-  // ================== MODAL ==================
+  deleteButtonText: { fontSize: 15, fontWeight: "700" },
   modalOverlay: {
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.4)",
     justifyContent: "flex-end",
   },
   modalSheet: {
-    backgroundColor: "#fff",
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     padding: 20,
     paddingBottom: 30,
   },
-  modalTitle: {
-    fontSize: 16,
-    fontWeight: "800",
-    color: "#1A1A1A",
-    marginBottom: 12,
-  },
-  modalOption: {
-    paddingVertical: 14,
-    borderBottomWidth: 1,
-    borderBottomColor: "#F3F4F6",
-  },
-  modalOptionText: {
-    fontSize: 14,
-    color: "#1A1A1A",
-  },
-  modalCancel: {
-    marginTop: 12,
-    paddingVertical: 14,
-    alignItems: "center",
-  },
-  modalCancelText: {
-    fontSize: 14,
-    fontWeight: "700",
-    color: RED,
-  },
+  modalTitle: { fontSize: 16, fontWeight: "800", marginBottom: 12 },
+  modalOption: { paddingVertical: 14, borderBottomWidth: 1 },
+  modalOptionText: { fontSize: 14 },
+  modalCancel: { marginTop: 12, paddingVertical: 14, alignItems: "center" },
+  modalCancelText: { fontSize: 14, fontWeight: "700" },
 });

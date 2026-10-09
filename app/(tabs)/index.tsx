@@ -1,101 +1,202 @@
-import { useTasks } from '@/context/TasksContext';
-import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
-import { router } from 'expo-router';
-import React, { useMemo, useState } from 'react';
+import SearchModal from "@/components/SearchModal";
+import SortModal, { SortOption } from "@/components/SortModal";
+import { useTasks } from "@/context/TasksContext";
+import { useTheme } from "@/context/ThemeContext";
+import { hapticLight, hapticMedium, hapticSelection } from "@/lib/haptics";
+import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
+import { router } from "expo-router";
+import React, { useMemo, useState } from "react";
 import {
   ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
-} from 'react-native';
+} from "react-native";
 
-// ================== WARNA (samain sama SplashScreen) ==================
-const GREEN_DARK = '#1B6B3A';
-const GREEN = '#2E9E4F';
-const GREEN_LIGHT = '#7ED08B';
-const GREEN_BG = '#EAF6EC';
-const BG = '#F6FAF7';
-const RED_BG = '#FCE8E8';
-const RED_TEXT = '#D9534F';
-const ORANGE_BG = '#FDF3E0';
-const ORANGE_TEXT = '#C98A1E';
-
-// ================== FILTER OPTIONS ==================
-const FILTERS = ['Semua', 'Hari Ini', 'Mendatang', 'Selesai'];
-
-// Warna badge prioritas — sesuaikan kalau prioritas kamu pake nama lain
-const PRIORITY_STYLE = {
-  Tinggi: { bg: RED_BG, text: RED_TEXT },
-  Sedang: { bg: ORANGE_BG, text: ORANGE_TEXT },
-  Rendah: { bg: GREEN_BG, text: GREEN_DARK },
+type Task = {
+  id: string;
+  title: string;
+  description?: string;
+  date?: string;
+  dateLabel?: string;
+  priority?: string;
+  category?: string;
+  icon?: string;
+  completed: boolean;
+  deadlineDate?: string;
 };
 
-/**
- * HomeScreen
- *
- * Kirim data tugas kamu lewat prop `tasks`, contoh bentuk 1 item:
- * {
- *   id: '1',
- *   title: 'Belajar React Native',
- *   date: '18 Juli 2026',
- *   dateLabel: 'Hari ini',
- *   priority: 'Tinggi',       // 'Tinggi' | 'Sedang' | 'Rendah'
- *   icon: 'book',             // nama icon Ionicons, bebas kamu ganti
- *   completed: false,
- * }
- *
- * Kalau belum ada data sama sekali, tinggal jangan kirim prop tasks
- * (defaultnya array kosong) — nanti otomatis muncul tampilan "belum ada tugas".
- */
-export default function HomeScreen({
-  onPressSearch,
-  onPressSettings,
-  onPressStatistik,
-  onPressAddTask,
-  onPressTask,
-}) {
-  // Ambil tasks dan toggleTask dari context
+const FILTERS = ["Semua", "Hari Ini", "Mendatang", "Selesai"];
+
+const PRIORITY_FILTERS = [
+  { key: "Semua", label: "Semua" },
+  { key: "Tinggi", label: "Tinggi" },
+  { key: "Sedang", label: "Sedang" },
+  { key: "Rendah", label: "Rendah" },
+];
+
+const PRIORITY_WEIGHT: Record<string, number> = {
+  Tinggi: 3,
+  Sedang: 2,
+  Rendah: 1,
+};
+
+const SORT_LABEL: Record<SortOption, string> = {
+  terbaru: "Terbaru",
+  terlama: "Terlama",
+  prioritas: "Prioritas",
+  deadline: "Deadline",
+  az: "A-Z",
+  za: "Z-A",
+};
+
+export default function HomeScreen() {
   const { tasks, toggleTask } = useTasks();
-  const [activeFilter, setActiveFilter] = useState('Semua');
+  const { colors } = useTheme();
+  const [activeFilter, setActiveFilter] = useState("Semua");
+  const [activePriority, setActivePriority] = useState("Semua");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [showSearch, setShowSearch] = useState(false);
+  const [sortBy, setSortBy] = useState<SortOption>("terbaru");
+  const [showSort, setShowSort] = useState(false);
 
-  // Filter task sesuai tab yang dipilih
+  const PRIORITY_STYLE: Record<string, { bg: string; text: string }> = {
+    Tinggi: { bg: colors.dangerBg, text: colors.danger },
+    Sedang: { bg: colors.warningBg, text: colors.warning },
+    Rendah: { bg: colors.primaryBg, text: colors.primary },
+  };
+
   const filteredTasks = useMemo(() => {
-    switch (activeFilter) {
-      case 'Selesai':
-        return tasks.filter((t) => t.completed);
-      case 'Hari Ini':
-        return tasks.filter((t) => t.dateLabel === 'Hari ini' && !t.completed);
-      case 'Mendatang':
-        return tasks.filter((t) => t.dateLabel !== 'Hari ini' && !t.completed);
-      default:
-        return tasks;
-    }
-  }, [tasks, activeFilter]);
+    let result: Task[] = tasks;
 
-  // Hitung progress otomatis dari data yang kamu kirim
+    switch (activeFilter) {
+      case "Selesai":
+        result = result.filter((t) => t.completed);
+        break;
+      case "Hari Ini":
+        result = result.filter(
+          (t) => t.dateLabel === "Hari ini" && !t.completed,
+        );
+        break;
+      case "Mendatang":
+        result = result.filter(
+          (t) => t.dateLabel !== "Hari ini" && !t.completed,
+        );
+        break;
+      default:
+        break;
+    }
+
+    if (activePriority !== "Semua") {
+      result = result.filter((t) => t.priority === activePriority);
+    }
+
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase().trim();
+      result = result.filter(
+        (t) =>
+          t.title?.toLowerCase().includes(q) ||
+          t.description?.toLowerCase().includes(q) ||
+          t.category?.toLowerCase().includes(q),
+      );
+    }
+
+    const sorted = [...result];
+    switch (sortBy) {
+      case "terbaru":
+        break;
+      case "terlama":
+        sorted.reverse();
+        break;
+      case "prioritas":
+        sorted.sort(
+          (a, b) =>
+            (PRIORITY_WEIGHT[b.priority || "Rendah"] || 0) -
+            (PRIORITY_WEIGHT[a.priority || "Rendah"] || 0),
+        );
+        break;
+      case "deadline":
+        sorted.sort((a, b) => {
+          if (!a.deadlineDate) return 1;
+          if (!b.deadlineDate) return -1;
+          return (
+            new Date(a.deadlineDate).getTime() -
+            new Date(b.deadlineDate).getTime()
+          );
+        });
+        break;
+      case "az":
+        sorted.sort((a, b) => (a.title || "").localeCompare(b.title || ""));
+        break;
+      case "za":
+        sorted.sort((a, b) => (b.title || "").localeCompare(a.title || ""));
+        break;
+    }
+
+    return sorted;
+  }, [tasks, activeFilter, activePriority, searchQuery, sortBy]);
+
   const totalTasks = tasks.length;
   const doneTasks = tasks.filter((t) => t.completed).length;
   const progressPercent =
     totalTasks === 0 ? 0 : Math.round((doneTasks / totalTasks) * 100);
 
+  const handleOpenSearch = () => {
+    hapticLight();
+    setShowSearch(true);
+  };
+
+  const handleCloseSearch = () => {
+    setShowSearch(false);
+    setSearchQuery("");
+  };
+
+  const hasActiveFilter =
+    activeFilter !== "Semua" ||
+    activePriority !== "Semua" ||
+    searchQuery.length > 0;
+
+  const handleResetFilter = () => {
+    hapticMedium();
+    setActiveFilter("Semua");
+    setActivePriority("Semua");
+    setSearchQuery("");
+  };
+
   return (
-    <View style={styles.container}>
-      {/* ================= HEADER ================= */}
+    <View style={[styles.container, { backgroundColor: colors.bg }]}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>
-          Task<Text style={styles.headerTitleAccent}>Flow</Text>
+        <Text style={[styles.headerTitle, { color: colors.text }]}>
+          Task<Text style={{ color: colors.primary }}>Flow</Text>
         </Text>
         <View style={styles.headerIcons}>
           <TouchableOpacity
-            style={styles.iconButton}
-              onPress={() => alert('Fitur pencarian segera hadir bro 🔍')}>
-            <Ionicons name="search" size={20} color="#1A1A1A" />
+            style={[
+              styles.iconButton,
+              {
+                backgroundColor: colors.card,
+                shadowOpacity: colors.shadowOpacity,
+              },
+            ]}
+            onPress={handleOpenSearch}
+          >
+            <Ionicons name="search" size={20} color={colors.text} />
           </TouchableOpacity>
           <TouchableOpacity
-              style={styles.iconButton}
-                onPress={() => router.push('/(tabs)/pengaturan')}>
-            <Ionicons name="settings-outline" size={20} color="#1A1A1A" />
+            style={[
+              styles.iconButton,
+              {
+                backgroundColor: colors.card,
+                shadowOpacity: colors.shadowOpacity,
+              },
+            ]}
+            onPress={() => {
+              hapticLight();
+              router.push("/(tabs)/pengaturan");
+            }}
+          >
+            <Ionicons name="settings-outline" size={20} color={colors.text} />
           </TouchableOpacity>
         </View>
       </View>
@@ -104,68 +205,126 @@ export default function HomeScreen({
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
       >
-        {/* ================= PROGRESS CARD ================= */}
-        <View style={styles.progressCard}>
+        <View
+          style={[
+            styles.progressCard,
+            {
+              backgroundColor: colors.card,
+              shadowOpacity: colors.shadowOpacity,
+            },
+          ]}
+        >
           <View style={styles.progressHeaderRow}>
-            <Text style={styles.progressLabel}>Progress Hari Ini</Text>
-            <Text style={styles.progressPercent}>{progressPercent}%</Text>
+            <Text style={[styles.progressLabel, { color: colors.text }]}>
+              Progress Hari Ini
+            </Text>
+            <Text style={[styles.progressPercent, { color: colors.primary }]}>
+              {progressPercent}%
+            </Text>
           </View>
 
-          <View style={styles.progressBarTrack}>
+          <View
+            style={[
+              styles.progressBarTrack,
+              { backgroundColor: colors.border },
+            ]}
+          >
             <View
               style={[
                 styles.progressBarFill,
-                { width: `${progressPercent}%` },
+                {
+                  width: `${progressPercent}%`,
+                  backgroundColor: colors.primary,
+                },
               ]}
             />
           </View>
 
           <View style={styles.progressFooterRow}>
-            <Text style={styles.progressSubtext}>
+            <Text
+              style={[styles.progressSubtext, { color: colors.textSecondary }]}
+            >
               {doneTasks} dari {totalTasks} tugas selesai
             </Text>
             <TouchableOpacity
-  style={styles.statsButton}
-  onPress={() => router.push('/(tabs)/statistik')}
->
+              style={[
+                styles.statsButton,
+                { backgroundColor: colors.primaryBg },
+              ]}
+              onPress={() => {
+                hapticLight();
+                router.push("/(tabs)/statistik");
+              }}
+            >
               <MaterialCommunityIcons
                 name="chart-line"
                 size={14}
-                color={GREEN_DARK}
+                color={colors.primary}
               />
-              <Text style={styles.statsButtonText}>Lihat Statistik</Text>
-              <Ionicons name="chevron-forward" size={14} color={GREEN_DARK} />
+              <Text style={[styles.statsButtonText, { color: colors.primary }]}>
+                Lihat Statistik
+              </Text>
+              <Ionicons
+                name="chevron-forward"
+                size={14}
+                color={colors.primary}
+              />
             </TouchableOpacity>
           </View>
         </View>
 
-        {/* ================= FILTER CHIPS ================= */}
+        {searchQuery.length > 0 && (
+          <View
+            style={[styles.searchBanner, { backgroundColor: colors.primaryBg }]}
+          >
+            <Ionicons name="search" size={16} color={colors.primary} />
+            <Text
+              style={[styles.searchBannerText, { color: colors.primary }]}
+              numberOfLines={1}
+            >
+              Hasil untuk: "{searchQuery}"
+            </Text>
+            <TouchableOpacity onPress={() => setSearchQuery("")}>
+              <Ionicons name="close-circle" size={18} color={colors.primary} />
+            </TouchableOpacity>
+          </View>
+        )}
+
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
           style={styles.filterRow}
-          contentContainerStyle={{ gap: 8 }}
+          contentContainerStyle={styles.filterRowContent}
         >
           {FILTERS.map((filter) => {
             const active = filter === activeFilter;
             return (
               <TouchableOpacity
                 key={filter}
-                style={[styles.filterChip, active && styles.filterChipActive]}
-                onPress={() => setActiveFilter(filter)}
+                style={[
+                  styles.filterChip,
+                  {
+                    backgroundColor: active ? colors.primary : colors.card,
+                    borderColor: active ? colors.primary : colors.border,
+                  },
+                ]}
+                onPress={() => {
+                  hapticSelection();
+                  setActiveFilter(filter);
+                }}
               >
-                {filter === 'Semua' && (
+                {filter === "Semua" && (
                   <Ionicons
                     name="menu"
                     size={14}
-                    color={active ? '#fff' : '#6B7280'}
-                    style={{ marginRight: 4 }}
+                    color={active ? "#fff" : colors.textSecondary}
+                    style={styles.filterIcon}
                   />
                 )}
                 <Text
                   style={[
                     styles.filterChipText,
-                    active && styles.filterChipTextActive,
+                    { color: active ? "#fff" : colors.textSecondary },
                   ]}
                 >
                   {filter}
@@ -175,46 +334,162 @@ export default function HomeScreen({
           })}
         </ScrollView>
 
-        {/* ================= SECTION TITLE ================= */}
+        <View style={styles.priorityFilterHeader}>
+          <Text
+            style={[styles.priorityFilterLabel, { color: colors.textMuted }]}
+          >
+            Prioritas
+          </Text>
+          {hasActiveFilter && (
+            <TouchableOpacity onPress={handleResetFilter}>
+              <Text style={[styles.resetFilterText, { color: colors.primary }]}>
+                Reset
+              </Text>
+            </TouchableOpacity>
+          )}
+        </View>
+        <View style={styles.priorityFilterRow}>
+          {PRIORITY_FILTERS.map((p) => {
+            const active = p.key === activePriority;
+            const style = PRIORITY_STYLE[p.key] || {
+              bg: colors.cardAlt,
+              text: colors.textSecondary,
+            };
+            return (
+              <TouchableOpacity
+                key={p.key}
+                style={[
+                  styles.priorityChip,
+                  { backgroundColor: active ? style.text : style.bg },
+                  active && styles.priorityChipActive,
+                ]}
+                onPress={() => {
+                  hapticSelection();
+                  setActivePriority(p.key);
+                }}
+              >
+                {p.key !== "Semua" && (
+                  <Ionicons
+                    name="flag"
+                    size={12}
+                    color={active ? "#fff" : style.text}
+                    style={styles.priorityIcon}
+                  />
+                )}
+                <Text
+                  style={[
+                    styles.priorityChipText,
+                    { color: active ? "#fff" : style.text },
+                  ]}
+                >
+                  {p.label}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+
         <View style={styles.sectionHeaderRow}>
-          <Text style={styles.sectionTitle}>Tugas Hari Ini</Text>
-          <TouchableOpacity style={styles.sortButton}>
-            <Text style={styles.sortButtonText}>Urutkan</Text>
-            <Ionicons name="chevron-down" size={14} color="#6B7280" />
+          <View>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>
+              {searchQuery
+                ? "Hasil Pencarian"
+                : activePriority !== "Semua"
+                  ? `Prioritas ${activePriority}`
+                  : "Daftar Tugas"}
+            </Text>
+            <Text style={[styles.resultCount, { color: colors.textMuted }]}>
+              {filteredTasks.length} tugas · {SORT_LABEL[sortBy]}
+            </Text>
+          </View>
+
+          <TouchableOpacity
+            style={[styles.sortButton, { backgroundColor: colors.primaryBg }]}
+            onPress={() => {
+              hapticLight();
+              setShowSort(true);
+            }}
+          >
+            <Ionicons name="swap-vertical" size={14} color={colors.primary} />
+            <Text style={[styles.sortButtonText, { color: colors.primary }]}>
+              Urutkan
+            </Text>
           </TouchableOpacity>
         </View>
 
-        {/* ================= TASK LIST ================= */}
         {filteredTasks.length === 0 ? (
           <View style={styles.emptyState}>
             <Ionicons
-              name="checkmark-done-circle-outline"
+              name={
+                searchQuery ? "search-outline" : "checkmark-done-circle-outline"
+              }
               size={48}
-              color={GREEN_LIGHT}
+              color={colors.primaryAccent}
             />
-            <Text style={styles.emptyStateTitle}>Belum ada tugas</Text>
-            <Text style={styles.emptyStateSubtitle}>
-              Tambahkan tugas baru dengan tombol + di bawah
+            <Text style={[styles.emptyStateTitle, { color: colors.text }]}>
+              {searchQuery
+                ? "Gak ada hasil"
+                : activePriority !== "Semua"
+                  ? `Gak ada tugas prioritas ${activePriority}`
+                  : "Belum ada tugas"}
             </Text>
+            <Text
+              style={[styles.emptyStateSubtitle, { color: colors.textMuted }]}
+            >
+              {searchQuery
+                ? `Gak ada tugas yang cocok dengan "${searchQuery}"`
+                : activePriority !== "Semua"
+                  ? "Coba pilih prioritas lain atau reset filter"
+                  : "Tambahkan tugas baru dengan tombol + di bawah"}
+            </Text>
+            {hasActiveFilter && (
+              <TouchableOpacity
+                style={[
+                  styles.resetButton,
+                  { backgroundColor: colors.primary },
+                ]}
+                onPress={handleResetFilter}
+              >
+                <Ionicons name="refresh" size={16} color="#fff" />
+                <Text style={styles.resetButtonText}>Reset Filter</Text>
+              </TouchableOpacity>
+            )}
           </View>
         ) : (
           filteredTasks.map((task) => {
             const priorityStyle =
-              PRIORITY_STYLE[task.priority] || PRIORITY_STYLE.Rendah;
+              PRIORITY_STYLE[task.priority || "Rendah"] ||
+              PRIORITY_STYLE.Rendah;
 
             return (
               <TouchableOpacity
                 key={task.id}
-                style={styles.taskCard}
-                activeOpacity={0.8}
-                onPress={() => onPressTask && onPressTask(task)}
+                style={[
+                  styles.taskCard,
+                  {
+                    backgroundColor: colors.card,
+                    shadowOpacity: colors.shadowOpacity,
+                  },
+                ]}
+                activeOpacity={0.7}
+                onPress={() => {
+                  hapticLight();
+                  router.push(`/tambah-tugas?id=${task.id}`);
+                }}
               >
                 <TouchableOpacity
                   style={[
                     styles.taskCheckbox,
-                    task.completed && styles.taskCheckboxChecked,
+                    { borderColor: colors.border },
+                    task.completed && {
+                      backgroundColor: colors.primary,
+                      borderColor: colors.primary,
+                    },
                   ]}
-                  onPress={() => toggleTask(task.id)}
+                  onPress={() => {
+                    hapticLight();
+                    toggleTask(task.id);
+                  }}
                 >
                   {task.completed && (
                     <Ionicons name="checkmark" size={16} color="#fff" />
@@ -225,7 +500,11 @@ export default function HomeScreen({
                   <Text
                     style={[
                       styles.taskTitle,
-                      task.completed && styles.taskTitleDone,
+                      { color: colors.text },
+                      task.completed && {
+                        textDecorationLine: "line-through",
+                        color: colors.textMuted,
+                      },
                     ]}
                   >
                     {task.title}
@@ -235,10 +514,12 @@ export default function HomeScreen({
                     <Ionicons
                       name="time-outline"
                       size={12}
-                      color="#9CA3AF"
+                      color={colors.textMuted}
                     />
-                    <Text style={styles.taskDateText}>
-                      {task.date} {task.dateLabel ? `• ${task.dateLabel}` : ''}
+                    <Text
+                      style={[styles.taskDateText, { color: colors.textMuted }]}
+                    >
+                      {task.date} {task.dateLabel ? `• ${task.dateLabel}` : ""}
                     </Text>
                   </View>
 
@@ -261,11 +542,16 @@ export default function HomeScreen({
                   ) : null}
                 </View>
 
-                <View style={styles.taskIconBox}>
+                <View
+                  style={[
+                    styles.taskIconBox,
+                    { backgroundColor: colors.primaryBg },
+                  ]}
+                >
                   <Ionicons
-                    name={task.icon || 'document-text-outline'}
+                    name={(task.icon as any) || "document-text-outline"}
                     size={18}
-                    color={GREEN}
+                    color={colors.primary}
                   />
                 </View>
               </TouchableOpacity>
@@ -273,188 +559,181 @@ export default function HomeScreen({
           })
         )}
 
-        <View style={{ height: 100 }} />
+        <View style={styles.bottomSpacer} />
       </ScrollView>
 
-      {/* ================= FLOATING ADD BUTTON ================= */}
-      <TouchableOpacity 
-        style={styles.fab} 
-        onPress={() => router.push('/tambah-tugas')}
+      <TouchableOpacity
+        style={[
+          styles.fab,
+          {
+            backgroundColor: colors.primary,
+            shadowColor: colors.primary,
+          },
+        ]}
+        onPress={() => {
+          hapticMedium();
+          router.push("/tambah-tugas");
+        }}
       >
         <Ionicons name="add" size={28} color="#fff" />
       </TouchableOpacity>
+
+      <SearchModal
+        visible={showSearch}
+        value={searchQuery}
+        onChangeText={setSearchQuery}
+        onClose={handleCloseSearch}
+        resultCount={filteredTasks.length}
+      />
+
+      <SortModal
+        visible={showSort}
+        current={sortBy}
+        onSelect={setSortBy}
+        onClose={() => setShowSort(false)}
+      />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: BG,
-  },
-
+  container: { flex: 1 },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     paddingHorizontal: 20,
     paddingTop: 70,
     paddingBottom: 8,
   },
-  headerTitle: {
-    fontSize: 24,
-    fontWeight: '800',
-    color: '#1A1A1A',
-  },
-  headerTitleAccent: {
-    color: GREEN,
-  },
-  headerIcons: {
-    flexDirection: 'row',
-    gap: 10,
-  },
+  headerTitle: { fontSize: 24, fontWeight: "800" },
+  headerIcons: { flexDirection: "row", gap: 10 },
   iconButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     marginLeft: 8,
-    shadowColor: '#000',
-    shadowOpacity: 0.05,
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowRadius: 4,
     elevation: 2,
   },
-
-  scrollContent: {
-    paddingHorizontal: 20,
-  },
-
+  scrollContent: { paddingHorizontal: 20 },
   progressCard: {
-    backgroundColor: '#fff',
     borderRadius: 18,
     padding: 18,
     marginTop: 12,
-    shadowColor: '#000',
-    shadowOpacity: 0.05,
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
     shadowRadius: 10,
     elevation: 2,
   },
   progressHeaderRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
   },
-  progressLabel: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#1A1A1A',
-  },
-  progressPercent: {
-    fontSize: 20,
-    fontWeight: '800',
-    color: GREEN,
-  },
+  progressLabel: { fontSize: 15, fontWeight: "600" },
+  progressPercent: { fontSize: 20, fontWeight: "800" },
   progressBarTrack: {
     height: 8,
     borderRadius: 4,
-    backgroundColor: '#E5E7EB',
     marginTop: 12,
-    overflow: 'hidden',
+    overflow: "hidden",
   },
-  progressBarFill: {
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: GREEN,
-  },
+  progressBarFill: { height: 8, borderRadius: 4 },
   progressFooterRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginTop: 12,
   },
-  progressSubtext: {
-    fontSize: 12,
-    color: '#6B7280',
-  },
+  progressSubtext: { fontSize: 12 },
   statsButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: GREEN_BG,
+    flexDirection: "row",
+    alignItems: "center",
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 14,
     gap: 4,
   },
-  statsButtonText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: GREEN_DARK,
-    marginHorizontal: 4,
+  statsButtonText: { fontSize: 12, fontWeight: "600", marginHorizontal: 4 },
+  searchBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    marginTop: 14,
+    gap: 8,
   },
-
-  filterRow: {
-    marginTop: 18,
-    flexGrow: 0,
-  },
+  searchBannerText: { flex: 1, fontSize: 13, fontWeight: "600" },
+  filterRow: { marginTop: 18, flexGrow: 0 },
+  filterRowContent: { gap: 8 },
   filterChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     paddingHorizontal: 16,
     paddingVertical: 9,
     borderRadius: 20,
-    backgroundColor: '#fff',
     borderWidth: 1,
-    borderColor: '#E5E7EB',
   },
-  filterChipActive: {
-    backgroundColor: GREEN_DARK,
-    borderColor: GREEN_DARK,
+  filterChipText: { fontSize: 13, fontWeight: "600" },
+  filterIcon: { marginRight: 4 },
+  priorityFilterHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginTop: 18,
+    marginBottom: 8,
   },
-  filterChipText: {
-    fontSize: 13,
-    color: '#6B7280',
-    fontWeight: '600',
+  priorityFilterLabel: { fontSize: 12, fontWeight: "700", letterSpacing: 0.5 },
+  resetFilterText: { fontSize: 12, fontWeight: "700" },
+  priorityFilterRow: { flexDirection: "row", gap: 8, flexWrap: "wrap" },
+  priorityChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 12,
+    gap: 4,
   },
-  filterChipTextActive: {
-    color: '#fff',
+  priorityChipActive: {
+    shadowColor: "#000",
+    shadowOpacity: 0.15,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 4,
+    elevation: 2,
   },
-
+  priorityChipText: { fontSize: 12, fontWeight: "700" },
+  priorityIcon: { marginRight: 2 },
   sectionHeaderRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginTop: 22,
     marginBottom: 12,
   },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '800',
-    color: '#1A1A1A',
-  },
+  sectionTitle: { fontSize: 18, fontWeight: "800" },
+  resultCount: { fontSize: 12, fontWeight: "600", marginTop: 2 },
   sortButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 12,
     gap: 4,
   },
-  sortButtonText: {
-    fontSize: 15,
-    color: '#6B7280',
-    marginRight: 4,
-  },
-
+  sortButtonText: { fontSize: 12, fontWeight: "700" },
   taskCard: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    backgroundColor: '#fff',
+    flexDirection: "row",
+    alignItems: "flex-start",
     borderRadius: 16,
     padding: 16,
     marginBottom: 12,
-    shadowColor: '#000',
-    shadowOpacity: 0.04,
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 3 },
     shadowRadius: 8,
     elevation: 1,
@@ -464,89 +743,68 @@ const styles = StyleSheet.create({
     height: 24,
     borderRadius: 12,
     borderWidth: 2,
-    borderColor: '#D1D5DB',
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     marginRight: 12,
     marginTop: 2,
   },
-  taskCheckboxChecked: {
-    backgroundColor: GREEN,
-    borderColor: GREEN,
-  },
-  taskInfo: {
-    flex: 1,
-  },
-  taskTitle: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#1A1A1A',
-  },
-  taskTitleDone: {
-    textDecorationLine: 'line-through',
-    color: '#9CA3AF',
-  },
+  taskInfo: { flex: 1 },
+  taskTitle: { fontSize: 15, fontWeight: "700" },
   taskDateRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     marginTop: 6,
     gap: 4,
   },
-  taskDateText: {
-    fontSize: 12,
-    color: '#9CA3AF',
-    marginLeft: 4,
-  },
+  taskDateText: { fontSize: 12, marginLeft: 4 },
   priorityBadge: {
-    alignSelf: 'flex-start',
+    alignSelf: "flex-start",
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 10,
     marginTop: 8,
   },
-  priorityText: {
-    fontSize: 11,
-    fontWeight: '700',
-  },
+  priorityText: { fontSize: 11, fontWeight: "700" },
   taskIconBox: {
     width: 36,
     height: 36,
     borderRadius: 10,
-    backgroundColor: GREEN_BG,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     marginLeft: 8,
   },
-
   emptyState: {
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     paddingVertical: 60,
   },
-  emptyStateTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#1A1A1A',
-    marginTop: 12,
-  },
+  emptyStateTitle: { fontSize: 18, fontWeight: "700", marginTop: 12 },
   emptyStateSubtitle: {
     fontSize: 13,
-    color: '#9CA3AF',
     marginTop: 4,
-    textAlign: 'center',
+    textAlign: "center",
+    paddingHorizontal: 20,
   },
-
+  resetButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 12,
+    marginTop: 16,
+    gap: 6,
+  },
+  resetButtonText: { fontSize: 13, fontWeight: "700", color: "#fff" },
+  bottomSpacer: { height: 100 },
   fab: {
-    position: 'absolute',
+    position: "absolute",
     right: 20,
     bottom: 24,
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: GREEN_DARK,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: GREEN_DARK,
+    alignItems: "center",
+    justifyContent: "center",
     shadowOpacity: 0.35,
     shadowOffset: { width: 0, height: 6 },
     shadowRadius: 12,

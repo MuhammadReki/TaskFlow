@@ -1,31 +1,34 @@
-import { Ionicons } from '@expo/vector-icons';
-import { Tabs } from 'expo-router';
+import { useTheme } from "@/context/ThemeContext";
+import { Ionicons } from "@expo/vector-icons";
+import { Tabs } from "expo-router";
 
 export default function TabsLayout() {
+  const { colors } = useTheme();
+
   return (
     <Tabs
       screenOptions={{
-        headerShown: false, // <-- SEMBUNYIKAN HEADER (hilangin tulisan Dashboard)
-        tabBarActiveTintColor: '#1B6B3A',
-        tabBarInactiveTintColor: '#9CA3AF',
+        headerShown: false,
+        tabBarActiveTintColor: colors.primary,
+        tabBarInactiveTintColor: colors.textMuted,
         tabBarStyle: {
-          backgroundColor: '#FFFFFF',
+          backgroundColor: colors.card,
           borderTopWidth: 1,
-          borderTopColor: '#E5E7EB',
+          borderTopColor: colors.border,
           height: 70,
           paddingBottom: 8,
           paddingTop: 8,
         },
         tabBarLabelStyle: {
           fontSize: 11,
-          fontWeight: '600',
+          fontWeight: "600",
         },
       }}
     >
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Dashboard', // <-- TITLE TETAP ADA UNTUK TAB LABEL
+          title: "Dashboard",
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="home-outline" size={size} color={color} />
           ),
@@ -35,7 +38,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="statistik"
         options={{
-          title: 'Statistik', // <-- TITLE TETAP ADA UNTUK TAB LABEL
+          title: "Statistik",
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="bar-chart-outline" size={size} color={color} />
           ),
@@ -45,7 +48,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="pengaturan"
         options={{
-          title: 'Pengaturan', // <-- TITLE TETAP ADA UNTUK TAB LABEL
+          title: "Pengaturan",
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="settings-outline" size={size} color={color} />
           ),
