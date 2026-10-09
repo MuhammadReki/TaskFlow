@@ -1,6 +1,8 @@
 <div align="center">
 
-# 📋 TaskFlow
+<img src="docs/logo.png" width="120" alt="TaskFlow Logo"/>
+
+# TaskFlow
 
 ### Aplikasi To-Do List Modern dengan Cloud Sync
 
